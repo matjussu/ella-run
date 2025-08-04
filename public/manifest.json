@@ -1,0 +1,16 @@
+
+{
+  "short_name": "ELLA Run",
+  "name": "ELLA Run - Ton Parcours Fitness Personnalisé",
+  "icons": [
+    {
+      "src": "logo_run.png",
+      "type": "image/png",
+      "sizes": "512x512" 
+    }
+  ],
+  "start_url": ".",
+  "display": "standalone", 
+  "theme_color": "#ff69b4", 
+  "background_color": "#ffffff" 
+}

@@ -161,6 +161,75 @@ export const useOnboarding = () => {
 export const OnboardingProvider = ({ children }) => {
   const [state, dispatch] = useReducer(onboardingReducer, initialState);
 
+  // Validate current step when data changes
+  useEffect(() => {
+    const validateStep = () => {
+      const { currentStep, userData } = state;
+      let isValid = true;
+      const errors = {};
+
+      switch (currentStep) {
+        case ONBOARDING_STEPS.PERSONAL_INFO:
+          if (!userData.personalInfo.name?.trim()) {
+            errors.name = 'Le nom est requis';
+            isValid = false;
+          }
+          if (!userData.personalInfo.age || userData.personalInfo.age < 16 || userData.personalInfo.age > 100) {
+            errors.age = 'Âge invalide (16-100 ans)';
+            isValid = false;
+          }
+          if (!userData.personalInfo.height || userData.personalInfo.height < 120 || userData.personalInfo.height > 250) {
+            errors.height = 'Taille invalide (120-250 cm)';
+            isValid = false;
+          }
+          if (!userData.personalInfo.weight || userData.personalInfo.weight < 30 || userData.personalInfo.weight > 300) {
+            errors.weight = 'Poids invalide (30-300 kg)';
+            isValid = false;
+          }
+          break;
+
+        case ONBOARDING_STEPS.FITNESS_LEVEL:
+          if (!userData.fitnessProfile.level) {
+            errors.level = 'Niveau de fitness requis';
+            isValid = false;
+          }
+          break;
+
+        case ONBOARDING_STEPS.GOALS:
+          if (!userData.fitnessProfile.goals || userData.fitnessProfile.goals.length === 0) {
+            errors.goals = 'Au moins un objectif requis';
+            isValid = false;
+          }
+          break;
+
+        case ONBOARDING_STEPS.TARGET_AREAS:
+          if (!userData.fitnessProfile.targetAreas || userData.fitnessProfile.targetAreas.length === 0) {
+            errors.targetAreas = 'Au moins une zone cible requise';
+            isValid = false;
+          }
+          break;
+
+        case ONBOARDING_STEPS.SCHEDULE:
+          if (!userData.schedule.sessionsPerWeek || userData.schedule.sessionsPerWeek < 1) {
+            errors.sessionsPerWeek = 'Nombre de séances requis';
+            isValid = false;
+          }
+          if (!userData.schedule.sessionDuration || userData.schedule.sessionDuration < 15) {
+            errors.sessionDuration = 'Durée de séance requise';
+            isValid = false;
+          }
+          break;
+
+        default:
+          isValid = true;
+      }
+
+      dispatch({ type: 'SET_VALIDATION', payload: { isValid, errors } });
+    };
+
+    validateStep();
+  }, [state.currentStep, state.userData]);
+
   // Navigation functions
   const goToStep = (step) => {
     dispatch({ type: 'SET_CURRENT_STEP', payload: step });
@@ -197,66 +266,9 @@ export const OnboardingProvider = ({ children }) => {
     updateUserData({ preferences: { ...state.userData.preferences, ...preferences } });
   };
 
-  // Validation functions
+  // Manual validation function (for explicit validation calls)
   const validateCurrentStep = () => {
-    const { currentStep, userData } = state;
-    let isValid = true;
-    const errors = {};
-
-    switch (currentStep) {
-      case ONBOARDING_STEPS.PERSONAL_INFO:
-        if (!userData.personalInfo.name?.trim()) {
-          errors.name = 'Le nom est requis';
-          isValid = false;
-        }
-        if (!userData.personalInfo.age || userData.personalInfo.age < 16 || userData.personalInfo.age > 100) {
-          errors.age = 'Âge valide requis (16-100 ans)';
-          isValid = false;
-        }
-        if (!userData.personalInfo.height || userData.personalInfo.height < 120 || userData.personalInfo.height > 220) {
-          errors.height = 'Taille valide requise (120-220 cm)';
-          isValid = false;
-        }
-        if (!userData.personalInfo.weight || userData.personalInfo.weight < 30 || userData.personalInfo.weight > 200) {
-          errors.weight = 'Poids valide requis (30-200 kg)';
-          isValid = false;
-        }
-        break;
-
-      case ONBOARDING_STEPS.FITNESS_LEVEL:
-        if (!userData.fitnessProfile.level) {
-          errors.level = 'Niveau de fitness requis';
-          isValid = false;
-        }
-        break;
-
-      case ONBOARDING_STEPS.GOALS:
-        if (!userData.fitnessProfile.goals.length) {
-          errors.goals = 'Au moins un objectif est requis';
-          isValid = false;
-        }
-        break;
-
-      case ONBOARDING_STEPS.TARGET_AREAS:
-        if (!userData.fitnessProfile.targetAreas.length) {
-          errors.targetAreas = 'Au moins une zone cible est requise';
-          isValid = false;
-        }
-        break;
-
-      case ONBOARDING_STEPS.SCHEDULE:
-        if (!userData.schedule.sessionsPerWeek || userData.schedule.sessionsPerWeek < 1) {
-          errors.sessions = 'Nombre de sessions requis';
-          isValid = false;
-        }
-        break;
-
-      default:
-        isValid = true;
-    }
-
-    dispatch({ type: 'SET_VALIDATION', payload: { isValid, errors } });
-    return isValid;
+    return state.validation.isValid;
   };
 
   // Complete onboarding and save profile
@@ -323,9 +335,9 @@ export const OnboardingProvider = ({ children }) => {
     };
   };
 
-  // Check if can go to next step
+  // Check if can go to next step (without triggering validation)
   const canGoNext = () => {
-    return state.currentStepIndex < state.totalSteps - 1 && validateCurrentStep();
+    return state.currentStepIndex < state.totalSteps - 1 && state.validation.isValid;
   };
 
   // Check if can go to previous step

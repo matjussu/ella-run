@@ -6,9 +6,9 @@
  */
 
 import React, { useEffect, useState } from 'react';
-import styled, { keyframes } from 'styled-components';
+import styled, { keyframes, css } from 'styled-components';
 import { useOnboarding } from '../../contexts/OnboardingContext';
-import logoImg from '../../logo_run.png';
+import logoImg from '../../logo_run.svg'; // Updated to use SVG logo
 
 // Animations
 const fadeInUp = keyframes`
@@ -53,7 +53,7 @@ const WelcomeContainer = styled.div`
     ${props => props.theme.colors.background.secondary}30
   );
   background-size: 400% 400%;
-  animation: ${gradient} 8s ease infinite;
+  ${css`animation: ${gradient} 8s ease infinite;`}
   position: relative;
   overflow: hidden;
 
@@ -63,7 +63,7 @@ const WelcomeContainer = styled.div`
     top: 10%;
     left: 10%;
     font-size: 2rem;
-    animation: ${sparkle} 2s ease infinite;
+    ${css`animation: ${sparkle} 2s ease infinite;`}
     animation-delay: 0.5s;
   }
 
@@ -73,7 +73,7 @@ const WelcomeContainer = styled.div`
     top: 20%;
     right: 10%;
     font-size: 1.5rem;
-    animation: ${sparkle} 2s ease infinite;
+    ${css`animation: ${sparkle} 2s ease infinite;`}
     animation-delay: 1s;
   }
 `;
@@ -86,14 +86,14 @@ const ContentCard = styled.div`
   text-align: center;
   max-width: 600px;
   width: 100%;
-  animation: ${fadeInUp} 1s ease-out;
+  ${css`animation: ${fadeInUp} 1s ease-out;`}
   position: relative;
   border: 2px solid ${props => props.theme.colors.primaryLight}20;
 `;
 
 const LogoContainer = styled.div`
   margin-bottom: ${props => props.theme.spacing.xl};
-  animation: ${logoFloat} 4s ease-in-out infinite;
+  ${css`animation: ${logoFloat} 4s ease-in-out infinite;`}
 `;
 
 const WelcomeLogo = styled.img`
@@ -113,7 +113,7 @@ const WelcomeTitle = styled.h1`
   background-clip: text;
   margin-bottom: ${props => props.theme.spacing.lg};
   line-height: 1.2;
-  animation: ${fadeInUp} 1s ease-out 0.3s both;
+  ${css`animation: ${fadeInUp} 1s ease-out 0.3s both;`}
 `;
 
 const WelcomeSubtitle = styled.h2`
@@ -121,7 +121,7 @@ const WelcomeSubtitle = styled.h2`
   color: ${props => props.theme.colors.text.secondary};
   font-weight: ${props => props.theme.fonts.weights.medium};
   margin-bottom: ${props => props.theme.spacing.xl};
-  animation: ${fadeInUp} 1s ease-out 0.5s both;
+  ${css`animation: ${fadeInUp} 1s ease-out 0.5s both;`}
 `;
 
 const WelcomeDescription = styled.p`
@@ -129,7 +129,7 @@ const WelcomeDescription = styled.p`
   color: ${props => props.theme.colors.text.primary};
   line-height: 1.7;
   margin-bottom: ${props => props.theme.spacing.xl};
-  animation: ${fadeInUp} 1s ease-out 0.7s both;
+  ${css`animation: ${fadeInUp} 1s ease-out 0.7s both;`}
 `;
 
 const FeaturesList = styled.div`
@@ -137,7 +137,7 @@ const FeaturesList = styled.div`
   grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
   gap: ${props => props.theme.spacing.lg};
   margin-bottom: ${props => props.theme.spacing.xl};
-  animation: ${fadeInUp} 1s ease-out 0.9s both;
+  ${css`animation: ${fadeInUp} 1s ease-out 0.9s both;`}
 `;
 
 const FeatureItem = styled.div`
@@ -188,7 +188,7 @@ const StartButton = styled.button`
   transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
   position: relative;
   overflow: hidden;
-  animation: ${fadeInUp} 1s ease-out 1.1s both;
+  ${css`animation: ${fadeInUp} 1s ease-out 1.1s both;`}
   box-shadow: 0 8px 25px rgba(255, 105, 180, 0.4);
 
   &::before {
@@ -221,7 +221,7 @@ const MotivationalText = styled.p`
   color: ${props => props.theme.colors.primary};
   font-size: ${props => props.theme.fonts.sizes.md};
   margin-top: ${props => props.theme.spacing.lg};
-  animation: ${fadeInUp} 1s ease-out 1.3s both;
+  ${css`animation: ${fadeInUp} 1s ease-out 1.3s both;`}
 `;
 
 const WelcomeScreen = () => {

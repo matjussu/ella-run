@@ -18,7 +18,7 @@ import OnboardingFlow from './components/OnboardingFlow';
 import { userProgressService } from './services/firebaseService';
 import userProfileService from './services/userProfileService';
 import { generateEllaWorkout } from './services/ellaWorkoutService';
-import logoImg from './logo_run.png';
+import logoImg from './logo_run.svg';
 
 // Theme configuration for pink/white aesthetic
 const theme = {

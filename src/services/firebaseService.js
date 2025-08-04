@@ -69,8 +69,11 @@ export const exerciseService = {
         throw new Error('Exercise not found');
       }
     } catch (error) {
-      console.error('Error fetching exercise:', error);
-      throw new Error('Failed to load exercise details');
+      // Only log if it's not a "not found" error (which is expected for RapidAPI exercises)
+      if (error.message !== 'Exercise not found') {
+        console.error('Error fetching exercise:', error);
+      }
+      throw error;
     }
   },
 

@@ -155,7 +155,7 @@ const WorkoutStatus = styled.div`
   border-radius: ${props => props.theme.borderRadius.pill};
   font-size: ${props => props.theme.fonts.sizes.sm};
   font-weight: ${props => props.theme.fonts.weights.medium};
-  background: ${props => props.completed ? props.theme.colors.success : props.theme.colors.warning};
+  background: ${props => props.$completed ? props.theme.colors.success : props.theme.colors.warning};
   color: white;
 `;
 
@@ -170,7 +170,7 @@ const ProgressBar = styled.div`
 const ProgressFill = styled.div`
   background: linear-gradient(90deg, ${props => props.theme.colors.primary} 0%, ${props => props.theme.colors.primaryDark} 100%);
   height: 100%;
-  width: ${props => props.percentage}%;
+  width: ${props => props. $percentage}%;
   transition: width 0.3s ease;
   border-radius: ${props => props.theme.borderRadius.pill};
 `;
@@ -462,7 +462,7 @@ const ProgressDashboard = ({ progress, onRefresh }) => {
         <Section>
           <SectionTitle>📈 Progress Overview</SectionTitle>
           <ProgressBar>
-            <ProgressFill percentage={progressStats.completionRate} />
+            <ProgressFill $percentage={progressStats.completionRate} />
           </ProgressBar>
           <ProgressText>
             You've completed {progressStats.completedSessions} out of {progressStats.totalSessions} workouts ({progressStats.completionRate}%)
@@ -501,7 +501,7 @@ const ProgressDashboard = ({ progress, onRefresh }) => {
                     <span>📊 {workout.totalSessions || 3} sessions</span>
                   </WorkoutMeta>
                 </WorkoutInfo>
-                <WorkoutStatus completed={workout.isCompleted}>
+                <WorkoutStatus $completed={workout.isCompleted}>
                   {workout.isCompleted ? '✅ Completed' : '⏳ In Progress'}
                 </WorkoutStatus>
               </WorkoutItem>

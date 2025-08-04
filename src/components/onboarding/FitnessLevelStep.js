@@ -6,7 +6,7 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import styled, { keyframes } from 'styled-components';
+import styled, { keyframes, css } from 'styled-components';
 import { useOnboarding } from '../../contexts/OnboardingContext';
 
 // Animations
@@ -31,7 +31,7 @@ const StepContainer = styled.div`
   max-width: 900px;
   margin: 0 auto;
   padding: ${props => props.theme.spacing.xl};
-  animation: ${slideInUp} 0.6s ease-out;
+  ${css`animation: ${slideInUp} 0.6s ease-out;`}
 `;
 
 const StepHeader = styled.div`
@@ -173,7 +173,7 @@ const SelectionIndicator = styled.div`
   font-size: 14px;
   transition: all 0.3s ease;
 
-  ${props => props.selected && `
+  ${props => props.selected && css`
     animation: ${cardHover} 0.3s ease;
   `}
 `;

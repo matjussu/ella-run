@@ -6,8 +6,8 @@
  */
 
 import React from 'react';
-import styled, { keyframes } from 'styled-components';
-import logoImg from '../logo_run.png';
+import styled, { keyframes, css } from 'styled-components';
+import logoImg from '../logo_run.svg';
 
 // Spinning animation
 const spin = keyframes`
@@ -27,7 +27,7 @@ const SpinnerContainer = styled.div`
   justify-content: center;
   align-items: center;
   padding: ${props => props.theme.spacing.xxl};
-  min-height: ${props => props.fullHeight ? '50vh' : 'auto'};
+  min-height: ${props => props.$fullHeight ? '50vh' : 'auto'};
   position: relative;
 `;
 
@@ -41,7 +41,7 @@ const float = keyframes`
 const LogoContainer = styled.div`
   position: relative;
   margin-bottom: ${props => props.theme.spacing.lg};
-  animation: ${float} 3s ease-in-out infinite;
+  ${css`animation: ${float} 3s ease-in-out infinite;`}
 `;
 
 const BrandedLogo = styled.img`
@@ -67,7 +67,7 @@ const SpinnerRing = styled.div`
     margin: 6px;
     border: 6px solid ${props => props.theme.colors.primary};
     border-radius: 50%;
-    animation: ${spin} 1.2s cubic-bezier(0.5, 0, 0.5, 1) infinite;
+    ${css`animation: ${spin} 1.2s cubic-bezier(0.5, 0, 0.5, 1) infinite;`}
     border-color: ${props => props.theme.colors.primary} transparent transparent transparent;
   }
 
@@ -89,12 +89,12 @@ const SpinnerText = styled.p`
   color: ${props => props.theme.colors.text.secondary};
   font-size: ${props => props.theme.fonts.sizes.md};
   font-weight: ${props => props.theme.fonts.weights.medium};
-  animation: ${pulse} 2s ease-in-out infinite;
+  ${css`animation: ${pulse} 2s ease-in-out infinite;`}
 `;
 
 const LoadingSpinner = ({ 
   text = 'Chargement...', 
-  fullHeight = false,
+  $fullHeight = false,
   size = 'medium',
   showLogo = true,
   motivationalText = null
@@ -110,7 +110,7 @@ const LoadingSpinner = ({
   const displayText = motivationalText || encouragingTexts[Math.floor(Math.random() * encouragingTexts.length)];
 
   return (
-    <SpinnerContainer fullHeight={fullHeight}>
+    <SpinnerContainer $fullHeight={$fullHeight}>
       {showLogo && (
         <LogoContainer>
           <BrandedLogo src={logoImg} alt="ELLA Run" size={size} />
@@ -123,7 +123,7 @@ const LoadingSpinner = ({
         <div></div>
       </SpinnerRing>
       <SpinnerText>{text}</SpinnerText>
-      {(fullHeight || motivationalText) && (
+      {($fullHeight || motivationalText) && (
         <SpinnerText style={{ fontSize: '0.9rem', fontStyle: 'italic', marginTop: '8px' }}>
           {displayText}
         </SpinnerText>

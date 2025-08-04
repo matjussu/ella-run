@@ -313,6 +313,236 @@ const ActionButton = styled.button`
   }
 `;
 
+// Enhanced Exercise Card Components
+const EnhancedExerciseCard = styled.div`
+  background: ${props => props.theme.colors.secondary};
+  border: 2px solid ${props => props.theme.colors.border};
+  border-radius: ${props => props.theme.borderRadius.large};
+  padding: ${props => props.theme.spacing.xl};
+  margin-bottom: ${props => props.theme.spacing.lg};
+  cursor: pointer;
+  transition: all 0.3s ease;
+  position: relative;
+
+  &:hover {
+    border-color: ${props => props.theme.colors.primary};
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(255, 105, 180, 0.15);
+  }
+`;
+
+const ExerciseHeader = styled.div`
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: ${props => props.theme.spacing.md};
+  flex-wrap: wrap;
+  gap: ${props => props.theme.spacing.sm};
+`;
+
+const ExerciseMetrics = styled.div`
+  display: flex;
+  flex-wrap: wrap;
+  gap: ${props => props.theme.spacing.xs};
+`;
+
+const MetricBadge = styled.span`
+  background: ${props => props.theme.colors.primary}20;
+  color: ${props => props.theme.colors.primary};
+  padding: ${props => props.theme.spacing.xs} ${props => props.theme.spacing.sm};
+  border-radius: ${props => props.theme.borderRadius.pill};
+  font-size: ${props => props.theme.fonts.sizes.sm};
+  font-weight: ${props => props.theme.fonts.weights.medium};
+`;
+
+const PatternBadge = styled(MetricBadge)`
+  background: ${props => props.theme.colors.success}20;
+  color: ${props => props.theme.colors.success};
+  font-weight: ${props => props.theme.fonts.weights.semibold};
+`;
+
+const ExerciseDescription = styled.p`
+  color: ${props => props.theme.colors.text.secondary};
+  font-size: ${props => props.theme.fonts.sizes.md};
+  line-height: 1.6;
+  margin-bottom: ${props => props.theme.spacing.md};
+  font-style: italic;
+`;
+
+const InstructionSection = styled.div`
+  margin-bottom: ${props => props.theme.spacing.lg};
+`;
+
+const InstructionTitle = styled.h4`
+  color: ${props => props.theme.colors.primary};
+  font-size: ${props => props.theme.fonts.sizes.md};
+  font-weight: ${props => props.theme.fonts.weights.semibold};
+  margin-bottom: ${props => props.theme.spacing.sm};
+`;
+
+const InstructionList = styled.ol`
+  list-style: none;
+  padding: 0;
+  margin: 0;
+`;
+
+const InstructionItem = styled.li`
+  display: flex;
+  align-items: flex-start;
+  margin-bottom: ${props => props.theme.spacing.sm};
+  padding: ${props => props.theme.spacing.sm};
+  background: ${props => props.theme.colors.background.secondary};
+  border-radius: ${props => props.theme.borderRadius.medium};
+`;
+
+const StepNumber = styled.span`
+  background: ${props => props.theme.colors.primary};
+  color: white;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: ${props => props.theme.fonts.sizes.sm};
+  font-weight: ${props => props.theme.fonts.weights.bold};
+  margin-right: ${props => props.theme.spacing.sm};
+  flex-shrink: 0;
+`;
+
+const StepText = styled.span`
+  color: ${props => props.theme.colors.text.primary};
+  font-size: ${props => props.theme.fonts.sizes.md};
+  line-height: 1.5;
+`;
+
+const SubExerciseSection = styled.div`
+  margin-bottom: ${props => props.theme.spacing.lg};
+`;
+
+const SubExerciseTitle = styled.h4`
+  color: ${props => props.theme.colors.primary};
+  font-size: ${props => props.theme.fonts.sizes.md};
+  font-weight: ${props => props.theme.fonts.weights.semibold};
+  margin-bottom: ${props => props.theme.spacing.sm};
+`;
+
+const SubExerciseList = styled.ul`
+  list-style: none;
+  padding: 0;
+  margin: 0;
+`;
+
+const SubExerciseItem = styled.li`
+  background: ${props => props.theme.colors.accent};
+  padding: ${props => props.theme.spacing.sm} ${props => props.theme.spacing.md};
+  margin-bottom: ${props => props.theme.spacing.xs};
+  border-radius: ${props => props.theme.borderRadius.medium};
+  border-left: 4px solid ${props => props.theme.colors.primary};
+  color: ${props => props.theme.colors.text.primary};
+  font-size: ${props => props.theme.fonts.sizes.md};
+`;
+
+const TipsSection = styled.div`
+  margin-bottom: ${props => props.theme.spacing.lg};
+`;
+
+const TipsTitle = styled.h4`
+  color: ${props => props.theme.colors.warning};
+  font-size: ${props => props.theme.fonts.sizes.md};
+  font-weight: ${props => props.theme.fonts.weights.semibold};
+  margin-bottom: ${props => props.theme.spacing.sm};
+`;
+
+const TipsList = styled.ul`
+  list-style: none;
+  padding: 0;
+  margin: 0;
+`;
+
+const TipItem = styled.li`
+  background: ${props => props.theme.colors.warning}10;
+  padding: ${props => props.theme.spacing.sm} ${props => props.theme.spacing.md};
+  margin-bottom: ${props => props.theme.spacing.xs};
+  border-radius: ${props => props.theme.borderRadius.medium};
+  border-left: 4px solid ${props => props.theme.colors.warning};
+  color: ${props => props.theme.colors.text.primary};
+  font-size: ${props => props.theme.fonts.sizes.sm};
+  font-style: italic;
+`;
+
+const ModificationSection = styled.div`
+  margin-bottom: ${props => props.theme.spacing.lg};
+`;
+
+const ModificationTitle = styled.h4`
+  color: ${props => props.theme.colors.success};
+  font-size: ${props => props.theme.fonts.sizes.md};
+  font-weight: ${props => props.theme.fonts.weights.semibold};
+  margin-bottom: ${props => props.theme.spacing.sm};
+`;
+
+const ModificationList = styled.ul`
+  list-style: none;
+  padding: 0;
+  margin: 0;
+`;
+
+const ModificationItem = styled.li`
+  background: ${props => props.theme.colors.success}10;
+  padding: ${props => props.theme.spacing.sm} ${props => props.theme.spacing.md};
+  margin-bottom: ${props => props.theme.spacing.xs};
+  border-radius: ${props => props.theme.borderRadius.medium};
+  border-left: 4px solid ${props => props.theme.colors.success};
+  color: ${props => props.theme.colors.text.primary};
+  font-size: ${props => props.theme.fonts.sizes.sm};
+`;
+
+const VariationSection = styled.div`
+  margin-bottom: ${props => props.theme.spacing.lg};
+`;
+
+const VariationTitle = styled.h4`
+  color: ${props => props.theme.colors.primaryDark};
+  font-size: ${props => props.theme.fonts.sizes.md};
+  font-weight: ${props => props.theme.fonts.weights.semibold};
+  margin-bottom: ${props => props.theme.spacing.sm};
+`;
+
+const VariationList = styled.ul`
+  list-style: none;
+  padding: 0;
+  margin: 0;
+`;
+
+const VariationItem = styled.li`
+  background: ${props => props.theme.colors.primaryDark}10;
+  padding: ${props => props.theme.spacing.sm} ${props => props.theme.spacing.md};
+  margin-bottom: ${props => props.theme.spacing.xs};
+  border-radius: ${props => props.theme.borderRadius.medium};
+  border-left: 4px solid ${props => props.theme.colors.primaryDark};
+  color: ${props => props.theme.colors.text.primary};
+  font-size: ${props => props.theme.fonts.sizes.sm};
+`;
+
+const ClickHint = styled.div`
+  position: absolute;
+  bottom: ${props => props.theme.spacing.sm};
+  right: ${props => props.theme.spacing.sm};
+  background: ${props => props.theme.colors.primary}20;
+  color: ${props => props.theme.colors.primary};
+  padding: ${props => props.theme.spacing.xs} ${props => props.theme.spacing.sm};
+  border-radius: ${props => props.theme.borderRadius.pill};
+  font-size: ${props => props.theme.fonts.sizes.xs};
+  font-weight: ${props => props.theme.fonts.weights.medium};
+  opacity: 0.7;
+  transition: opacity 0.3s ease;
+
+  ${EnhancedExerciseCard}:hover & {
+    opacity: 1;
+  }
+`;
+
 /**
  * WorkoutGenerator Component
  */
@@ -320,11 +550,18 @@ const WorkoutGenerator = ({ onWorkoutGenerated, onExerciseSelect, currentWorkout
   const { setIsLoading, handleError } = useAppContext();
   const [isGenerating, setIsGenerating] = useState(false);
   const [savedWorkouts, setSavedWorkouts] = useState([]);
+  const [isCompleting, setIsCompleting] = useState(false);
+  const [isCompleted, setIsCompleted] = useState(false);
 
   // Load saved workouts on component mount
   useEffect(() => {
     loadSavedWorkouts();
   }, []);
+
+  // Reset completion status when workout changes
+  useEffect(() => {
+    setIsCompleted(false);
+  }, [currentWorkout]);
 
   /**
    * Load previously saved workout sessions
@@ -346,15 +583,22 @@ const WorkoutGenerator = ({ onWorkoutGenerated, onExerciseSelect, currentWorkout
     setIsGenerating(true);
     
     try {
-      // Try to generate workout using RapidAPI
-      let workoutResult;
+      console.log('🎯 Génération d\'un nouveau plan d\'entraînement...');
       
-      try {
-        workoutResult = await generateWorkoutPlan();
-      } catch (apiError) {
-        console.warn('RapidAPI failed, using mock data:', apiError);
-        // Fallback to mock data if API fails
-        workoutResult = getMockWorkoutPlan();
+      // Try to generate workout using RapidAPI first
+      let workoutResult = await generateWorkoutPlan();
+      
+      // If RapidAPI fails, use Ella service as fallback
+      if (!workoutResult.success) {
+        console.log('⚠️ RapidAPI failed, using Ella service fallback...');
+        try {
+          const { generateEllaWorkout } = await import('../services/ellaWorkoutService');
+          workoutResult = await generateEllaWorkout();
+          console.log('✅ Fallback to Ella service successful');
+        } catch (ellaError) {
+          console.warn('⚠️ Ella service also failed, using mock data:', ellaError);
+          workoutResult = getMockWorkoutPlan();
+        }
       }
 
       if (workoutResult.success) {
@@ -368,13 +612,15 @@ const WorkoutGenerator = ({ onWorkoutGenerated, onExerciseSelect, currentWorkout
         // Refresh saved workouts list
         await loadSavedWorkouts();
         
+        console.log('✅ Plan d\'entraînement généré avec succès');
+        
       } else {
-        throw new Error('Failed to generate workout plan');
+        throw new Error(workoutResult.error || 'Failed to generate workout plan');
       }
       
     } catch (error) {
-      console.error('Workout generation error:', error);
-      handleError(new Error(`Failed to generate workout: ${error.message}`));
+      console.error('❌ Erreur génération workout:', error);
+      handleError(new Error(`Échec génération plan: ${error.message}`));
     } finally {
       setIsGenerating(false);
     }
@@ -405,7 +651,37 @@ const WorkoutGenerator = ({ onWorkoutGenerated, onExerciseSelect, currentWorkout
   }, [currentWorkout, setIsLoading, handleError, loadSavedWorkouts]);
 
   /**
-   * Render exercise phase
+   * Mark current workout as completed
+   */
+  const handleCompleteWorkout = useCallback(async () => {
+    if (!currentWorkout || isCompleting) return;
+    
+    try {
+      setIsCompleting(true);
+      
+      // Mark workout session as completed in Firebase
+      if (currentWorkout.id) {
+        await workoutSessionService.markSessionCompleted(currentWorkout.id);
+      }
+      
+      // Update local state
+      setIsCompleted(true);
+      
+      // Refresh saved workouts to reflect completion status
+      await loadSavedWorkouts();
+      
+      console.log('✅ Workout marked as completed!');
+      
+    } catch (error) {
+      console.error('Error completing workout:', error);
+      handleError(new Error('Failed to mark workout as completed'));
+    } finally {
+      setIsCompleting(false);
+    }
+  }, [currentWorkout, isCompleting, handleError, loadSavedWorkouts]);
+
+  /**
+   * Render exercise phase with enhanced, clear instructions
    */
   const renderExercisePhase = (title, exercises) => {
     if (!exercises || exercises.length === 0) return null;
@@ -415,23 +691,92 @@ const WorkoutGenerator = ({ onWorkoutGenerated, onExerciseSelect, currentWorkout
         <PhaseTitle>{title}</PhaseTitle>
         <ExerciseList>
           {exercises.map((exercise) => (
-            <ExerciseItem
+            <EnhancedExerciseCard
               key={exercise.id}
               onClick={() => handleExerciseClick(exercise)}
             >
-              <ExerciseName>{exercise.name}</ExerciseName>
-              <ExerciseDetails>
-                {exercise.duration && (
-                  <ExerciseDetail>⏱️ {exercise.duration} min</ExerciseDetail>
-                )}
-                {exercise.sets && (
-                  <ExerciseDetail>📊 {exercise.sets} sets</ExerciseDetail>
-                )}
-                {exercise.reps && (
-                  <ExerciseDetail>🔄 {exercise.reps} reps</ExerciseDetail>
-                )}
-              </ExerciseDetails>
-            </ExerciseItem>
+              <ExerciseHeader>
+                <ExerciseName>{exercise.name}</ExerciseName>
+                <ExerciseMetrics>
+                  {exercise.duration && (
+                    <MetricBadge>⏱️ {exercise.duration} min</MetricBadge>
+                  )}
+                  {exercise.sets && (
+                    <MetricBadge>📊 {exercise.sets} sets</MetricBadge>
+                  )}
+                  {exercise.reps && (
+                    <MetricBadge>🔄 {exercise.reps} reps</MetricBadge>
+                  )}
+                  {exercise.pattern && (
+                    <PatternBadge>🔄 {exercise.pattern}</PatternBadge>
+                  )}
+                </ExerciseMetrics>
+              </ExerciseHeader>
+
+              {exercise.description && (
+                <ExerciseDescription>{exercise.description}</ExerciseDescription>
+              )}
+
+              {exercise.instructions && exercise.instructions.length > 0 && (
+                <InstructionSection>
+                  <InstructionTitle>📝 Instructions:</InstructionTitle>
+                  <InstructionList>
+                    {exercise.instructions.map((instruction, index) => (
+                      <InstructionItem key={index}>
+                        <StepNumber>{index + 1}</StepNumber>
+                        <StepText>{instruction}</StepText>
+                      </InstructionItem>
+                    ))}
+                  </InstructionList>
+                </InstructionSection>
+              )}
+
+              {exercise.exercises && exercise.exercises.length > 0 && (
+                <SubExerciseSection>
+                  <SubExerciseTitle>💪 Exercises in this set:</SubExerciseTitle>
+                  <SubExerciseList>
+                    {exercise.exercises.map((subExercise, index) => (
+                      <SubExerciseItem key={index}>{subExercise}</SubExerciseItem>
+                    ))}
+                  </SubExerciseList>
+                </SubExerciseSection>
+              )}
+
+              {exercise.tips && exercise.tips.length > 0 && (
+                <TipsSection>
+                  <TipsTitle>💡 Tips:</TipsTitle>
+                  <TipsList>
+                    {exercise.tips.map((tip, index) => (
+                      <TipItem key={index}>{tip}</TipItem>
+                    ))}
+                  </TipsList>
+                </TipsSection>
+              )}
+
+              {exercise.modifications && exercise.modifications.length > 0 && (
+                <ModificationSection>
+                  <ModificationTitle>🔧 Easier Options:</ModificationTitle>
+                  <ModificationList>
+                    {exercise.modifications.map((mod, index) => (
+                      <ModificationItem key={index}>{mod}</ModificationItem>
+                    ))}
+                  </ModificationList>
+                </ModificationSection>
+              )}
+
+              {exercise.variations && exercise.variations.length > 0 && (
+                <VariationSection>
+                  <VariationTitle>🚀 Advanced Variations:</VariationTitle>
+                  <VariationList>
+                    {exercise.variations.map((variation, index) => (
+                      <VariationItem key={variation}>{variation}</VariationItem>
+                    ))}
+                  </VariationList>
+                </VariationSection>
+              )}
+
+              <ClickHint>Click for more details</ClickHint>
+            </EnhancedExerciseCard>
           ))}
         </ExerciseList>
       </ExercisePhase>
@@ -537,8 +882,21 @@ const WorkoutGenerator = ({ onWorkoutGenerated, onExerciseSelect, currentWorkout
             <ActionButton onClick={handleGenerateWorkout}>
               🔄 Generate New Plan
             </ActionButton>
-            <ActionButton primary onClick={handleSaveWorkout}>
+            <ActionButton onClick={handleSaveWorkout}>
               ❤️ Save to Favorites
+            </ActionButton>
+            <ActionButton 
+              primary 
+              onClick={handleCompleteWorkout}
+              disabled={isCompleting || isCompleted}
+            >
+              {isCompleting ? (
+                <>Loading...</>
+              ) : isCompleted ? (
+                '✅ Completed!'
+              ) : (
+                '✨ Mark as Complete'
+              )}
             </ActionButton>
           </ActionButtons>
         </WorkoutDisplay>

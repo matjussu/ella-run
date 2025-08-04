@@ -17,8 +17,8 @@ import MilestoneTracker from './components/MilestoneTracker';
 import OnboardingFlow from './components/OnboardingFlow';
 import { userProgressService } from './services/firebaseService';
 import userProfileService from './services/userProfileService';
-import { generateEllaWorkout } from './services/ellaWorkoutService';
-import logoImg from './logo_run.png';
+import { generateWorkoutPlan } from './services/rapidApiService';
+import logoImg from './logo_run.svg';
 
 // Theme configuration for pink/white aesthetic
 const theme = {
@@ -315,7 +315,7 @@ const ErrorMessage = styled.div`
 `;
 
 /**
- * Main App Component - FIXED VERSION
+ * Main App Component - FINAL FIXED VERSION
  */
 function App() {
   console.log('🚀 ELLA Run App starting...');
@@ -328,15 +328,15 @@ function App() {
   const [onboardingCompleted, setOnboardingCompleted] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [initializationAttempted, setInitializationAttempted] = useState(false);
+  
+  // No longer need the initializationAttempted state
+  // const [initializationAttempted, setInitializationAttempted] = useState(false);
 
-  // Initialize app with proper error handling
+  // CORRECTED: This useEffect now runs ONLY ONCE when the app first mounts.
   useEffect(() => {
-    if (!initializationAttempted) {
-      setInitializationAttempted(true);
-      initializeApp();
-    }
-  }, [initializationAttempted]);
+    initializeApp();
+  }, []); // <-- THE FIX: An empty dependency array tells React to run this only once.
+
 
   /**
    * Initialize the application and check onboarding status - FIXED VERSION
@@ -415,16 +415,21 @@ function App() {
   };
 
   /**
-   * Generate Ella's personalized workout
+   * Generate personalized workout using RapidAPI
    */
   const handleGenerateEllaWorkout = async () => {
     try {
       setIsLoading(true);
-      const workoutResult = await generateEllaWorkout();
+      
+      // Get user profile for personalization
+      const userProfile = await userProfileService.getUserProfileByName();
+      const workoutResult = await generateWorkoutPlan(userProfile);
       
       if (workoutResult.success) {
         handleWorkoutGenerated(workoutResult.data);
         setCurrentView(APP_STATES.WORKOUT_GENERATOR);
+      } else {
+        throw new Error(workoutResult.error || 'Failed to generate workout');
       }
     } catch (error) {
       handleError(error);
@@ -573,7 +578,7 @@ function App() {
             <button 
               onClick={() => {
                 setError(null);
-                setInitializationAttempted(false);
+                initializeApp();
               }}
               style={{
                 background: theme.colors.primary,

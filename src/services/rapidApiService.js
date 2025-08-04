@@ -9,21 +9,28 @@
  */
 
 import axios from 'axios';
-import { cacheWorkout, getCachedWorkout } from './workoutCacheService';
 
-// API Configuration
+// API Configuration pour AI Workout Planner
 const RAPIDAPI_CONFIG = {
-  baseURL: `https://${process.env.REACT_APP_RAPIDAPI_HOST}`,
   headers: {
     'X-RapidAPI-Key': process.env.REACT_APP_RAPIDAPI_KEY,
-    'X-RapidAPI-Host': process.env.REACT_APP_RAPIDAPI_HOST,
+    'X-RapidAPI-Host': 'ai-workout-planner-exercise-fitness-nutrition-guide.p.rapidapi.com',
     'Content-Type': 'application/json'
   }
 };
 
+// URL des endpoints de l'API (basés sur la documentation trouvée)
+const API_BASE_URL = 'https://ai-workout-planner-exercise-fitness-nutrition-guide.p.rapidapi.com/workoutplan';
+const ENDPOINTS = {
+  WORKOUT_PLANNER: '/generateWorkoutPlan', // Endpoint probable pour générer un plan
+  AI_WORKOUT: '/ai-workout', // Endpoint alternatif
+  BODY_PARTS: '/body-parts',
+  EQUIPMENT: '/equipment'
+};
+
 // Validate required environment variables
 const validateEnvironmentVariables = () => {
-  const requiredVars = ['REACT_APP_RAPIDAPI_KEY', 'REACT_APP_RAPIDAPI_HOST'];
+  const requiredVars = ['REACT_APP_RAPIDAPI_KEY'];
   const missingVars = requiredVars.filter(varName => !process.env[varName]);
   
   if (missingVars.length > 0) {
@@ -31,312 +38,235 @@ const validateEnvironmentVariables = () => {
   }
 };
 
-// Create axios instance with configuration
-const createApiClient = () => {
-  validateEnvironmentVariables();
-  return axios.create(RAPIDAPI_CONFIG);
-};
-
 /**
- * Generate a personalized workout plan using RapidAPI with Ella's specific parameters
+ * Teste la connectivité avec l'API AI Workout Planner
  */
-export const generateWorkoutPlan = async (userProfile = null) => {
+export const testApiConnection = async () => {
   try {
-    // First, try to get cached workout for this profile
-    const cachedWorkout = await getCachedWorkout(userProfile);
-    if (cachedWorkout) {
-      console.log('⚡ Using cached workout for improved performance');
-      return {
-        success: true,
-        data: cachedWorkout,
-        source: 'cache',
-        timestamp: new Date().toISOString()
-      };
-    }
-
-    const apiClient = createApiClient();
+    validateEnvironmentVariables();
     
-    // Use user profile if provided, otherwise use Ella's default parameters
-    const ellaDefaults = {
-      name: 'Ella',
-      weight: 63, // kg
-      height: 170, // cm
-      age: 25,
-      fitnessLevel: 'beginner',
-      goals: ['running', 'strength_training'],
-      targetAreas: ['squats', 'abs', 'full_body'],
-      sessionsPerWeek: 3,
-      sessionDuration: 60
-    };
-
-    const profile = userProfile || ellaDefaults;
+    console.log('🔍 Test de connectivité avec l\'API...');
     
-    // Calculate BMI for API
-    const bmi = (profile.weight / Math.pow(profile.height / 100, 2)).toFixed(1);
+    // Essayer d'abord l'endpoint racine pour voir si l'API répond
+    const response = await axios.get(`${API_BASE_URL}/`, RAPIDAPI_CONFIG);
     
-    // Personalized workout parameters for RapidAPI
-    const workoutParams = {
-      user_profile: {
-        weight: profile.weight,
-        height: profile.height,
-        age: profile.age,
-        bmi: parseFloat(bmi),
-        fitness_level: profile.fitnessLevel,
-        name: profile.name
-      },
-      goals: Array.isArray(profile.goals) ? profile.goals : ['running', 'strength_training'],
-      target_areas: Array.isArray(profile.targetAreas) ? profile.targetAreas : ['squats', 'abs', 'full_body'],
-      frequency: profile.sessionsPerWeek || 3,
-      duration: profile.sessionDuration || 60,
-      equipment: ['bodyweight', 'dumbbells', 'resistance_bands'],
-      preferences: {
-        workout_type: 'mixed',
-        focus_areas: ['cardio', 'strength', 'flexibility'],
-        difficulty_progression: true,
-        include_warm_up: true,
-        include_cool_down: true
-      },
-      language: 'fr'
-    };
-
-    console.log('🔥 Generating personalized workout with RapidAPI for:', profile.name);
-    console.log('📊 User Profile:', {
-      weight: `${profile.weight}kg`,
-      height: `${profile.height}cm`,
-      bmi: bmi,
-      level: profile.fitnessLevel
-    });
-
-    // Make real API request to generate workout plan
-    const response = await apiClient.post('/generate-workout', workoutParams);
-    
-    if (!response.data) {
-      throw new Error('No data received from workout API');
-    }
-
-    // Transform and validate the API response
-    const transformedData = transformWorkoutData(response.data);
-    validateWorkoutPlan(transformedData);
-
-    console.log('✅ Successfully generated personalized workout from RapidAPI');
-    
-    // Cache the successful result for future use
-    await cacheWorkout(transformedData, profile, 'rapidapi');
+    console.log('✅ API accessible - Statut:', response.status);
+    console.log('📋 Réponse:', response.data);
     
     return {
       success: true,
-      data: transformedData,
-      source: 'rapidapi',
-      userProfile: profile,
-      timestamp: new Date().toISOString()
+      data: response.data,
+      status: response.status
     };
-
+    
   } catch (error) {
-    console.warn('⚠️ RapidAPI error, falling back to Ella\'s personalized service:', error.message);
-    
-    // Smart fallback system with detailed error handling
-    let fallbackReason = 'unknown';
-    
-    if (error.response) {
-      // API responded with error status
-      const statusCode = error.response.status;
-      const errorMessage = error.response.data?.message || error.response.statusText;
-      
-      switch (statusCode) {
-        case 401:
-          fallbackReason = 'invalid_api_key';
-          console.warn('🔑 Invalid API key detected, using offline workout generation');
-          break;
-        case 403:
-          fallbackReason = 'subscription_expired';
-          console.warn('📵 API subscription issue, using cached workout templates');
-          break;
-        case 429:
-          fallbackReason = 'rate_limit';
-          console.warn('⏰ Rate limit exceeded, using intelligent fallback');
-          break;
-        case 500:
-          fallbackReason = 'server_error';
-          console.warn('🔧 Server temporarily unavailable, generating offline');
-          break;
-        default:
-          fallbackReason = 'api_error';
-          console.warn(`❌ API Error (${statusCode}): ${errorMessage}`);
-      }
-    } else if (error.request) {
-      fallbackReason = 'network_error';
-      console.warn('🌐 Network connectivity issue, using offline mode');
-    } else if (error.message.includes('environment')) {
-      fallbackReason = 'config_error';
-      console.warn('⚙️ Configuration issue, using development mode');
-    }
-
-    // Fallback to Ella's personalized workout service
-    try {
-      console.log('🎯 Generating personalized workout using Ella\'s intelligent system...');
-      const { generateEllaWorkout } = await import('./ellaWorkoutService');
-      const fallbackResult = await generateEllaWorkout(userProfile);
-      
-      return {
-        ...fallbackResult,
-        source: 'ella_service',
-        fallbackReason,
-        note: 'Generated using personalized algorithm due to API unavailability'
-      };
-      
-    } catch (fallbackError) {
-      console.error('❌ Critical: Both RapidAPI and fallback failed:', fallbackError);
-      
-      // Final fallback to mock data with user awareness
-      const mockResult = getMockWorkoutPlan();
-      return {
-        ...mockResult,
-        source: 'mock_data',
-        fallbackReason: 'both_services_failed',
-        note: 'Using template workout. Please check your connection and try again later.'
-      };
-    }
+    console.log('❌ Test de connectivité échoué:', error.response?.status, error.message);
+    return {
+      success: false,
+      error: error.message,
+      status: error.response?.status
+    };
   }
 };
 
 /**
- * Transform API response data to our application format
+ * Génère un plan d'entraînement personnalisé en utilisant l'API AI Workout Planner de RapidAPI
+ * Fonction modifiée pour essayer différents endpoints possibles
  */
-const transformWorkoutData = (apiResponse) => {
-  const { workout_plan, metadata } = apiResponse;
+export const generateWorkoutPlan = async () => {
+  try {
+    // Validation des variables d'environnement
+    validateEnvironmentVariables();
+
+    console.log('🔥 Appel à l\'API AI Workout Planner...');
+
+    // D'abord, tester la connectivité de base
+    const connectionTest = await testApiConnection();
+    if (!connectionTest.success) {
+      throw new Error(`API non accessible: ${connectionTest.error}`);
+    }
+
+    // Paramètres pour la requête GET (convertis en query parameters)
+    const queryParams = {
+      fitness_level: "beginner",
+      goal: "running endurance,strength training",
+      targetMuscles: "full body,squats,abs",
+      sessionsPerWeek: 3,
+      sessionDurationMinutes: 50,
+      language: "fr"
+    };
+
+    console.log('📊 Paramètres de la requête:', queryParams);
+
+    // Liste des endpoints à essayer (basés sur des APIs similaires)
+    const endpointsToTry = [
+      '/exercises', // Liste des exercices disponibles
+      '/bodyparts', // Parties du corps
+      '/equipment', // Équipements disponibles
+      '/workout', // Plans d'entraînement
+      '/generate', // Génération de plan
+      '/plan', // Plan d'entraînement
+      '/ai-workout-planner', // Nom complet de l'API
+      '/workouts' // Version plurielle
+    ];
+
+    let lastError = null;
+    let successfulEndpoint = null;
+
+    // Essayer chaque endpoint
+    for (const endpoint of endpointsToTry) {
+      try {
+        console.log(`🎯 Essai de l'endpoint: ${endpoint}`);
+        
+        const url = `${API_BASE_URL}${endpoint}`;
+        const response = await axios.get(url, {
+          ...RAPIDAPI_CONFIG,
+          params: endpoint === '/exercises' || endpoint === '/bodyparts' || endpoint === '/equipment' 
+            ? {} // Pas de paramètres pour les endpoints de liste
+            : queryParams
+        });
+
+        console.log('✅ Réponse reçue de l\'API avec l\'endpoint:', endpoint);
+        console.log('📋 Données reçues:', response.data);
+
+        successfulEndpoint = endpoint;
+
+        // Si on obtient des données d'exercices, on peut construire un plan basique
+        if (endpoint === '/exercises' && Array.isArray(response.data)) {
+          const customPlan = createWorkoutFromExercises(response.data);
+          return {
+            success: true,
+            data: customPlan,
+            source: 'exercises_endpoint'
+          };
+        }
+
+        // Sinon, essayer de mapper la réponse
+        const mappedData = mapApiResponseToAppStructure(response.data);
+        return {
+          success: true,
+          data: mappedData,
+          source: endpoint
+        };
+
+      } catch (endpointError) {
+        console.log(`❌ Endpoint ${endpoint} failed:`, endpointError.response?.status || endpointError.message);
+        lastError = endpointError;
+        continue; // Essayer le prochain endpoint
+      }
+    }
+
+    // Si tous les endpoints ont échoué, lever la dernière erreur
+    throw lastError;
+
+  } catch (error) {
+    console.error('❌ Erreur lors de l\'appel API (tous endpoints):', error);
+    
+    let errorMessage = 'Échec de la génération du plan d\'entraînement depuis l\'API.';
+    
+    if (error.response) {
+      errorMessage += ` Status: ${error.response.status}`;
+      if (error.response.status === 404) {
+        errorMessage += ' - Endpoints non trouvés.';
+      } else if (error.response.status === 403) {
+        errorMessage += ' - Accès interdit. Vérifiez votre clé API.';
+      }
+    } else if (error.request) {
+      errorMessage += ' Problème de réseau.';
+    }
+
+    // Retourner une erreur avec suggestion de fallback
+    return {
+      success: false,
+      error: errorMessage,
+      suggestion: 'Utilisation du système de fallback (service Ella) recommandée.'
+    };
+  }
+};
+
+/**
+ * Mappe la réponse de l'API vers la structure de données de l'application
+ * @param {Object} apiResponse - Réponse de l'API
+ * @returns {Object} - Données mappées selon la structure de l'application
+ */
+const mapApiResponseToAppStructure = (apiResponse) => {
+  // L'API peut retourner les données directement ou dans un objet "data"
+  const data = apiResponse.data || apiResponse;
   
   return {
     id: generateWorkoutId(),
-    title: workout_plan.title || 'Custom Workout Plan',
-    description: workout_plan.description || 'Personalized beginner workout combining running and strength training',
-    level: 'Beginner',
-    frequency: '3 sessions per week',
-    goals: ['Running', 'Strength Training'],
-    estimatedDuration: workout_plan.estimated_duration || 60,
-    totalSessions: workout_plan.sessions?.length || 3,
-    sessions: transformSessions(workout_plan.sessions || []),
-    tips: workout_plan.tips || [],
-    warnings: workout_plan.warnings || [],
-    metadata: {
-      generatedAt: new Date().toISOString(),
-      apiVersion: metadata?.version || '1.0',
-      difficulty: metadata?.difficulty || 'beginner'
-    }
+    title: data.plan_title || data.title || "Programme Débutant Course & Force",
+    description: data.plan_description || data.description || "Un plan pour développer votre endurance et votre force.",
+    totalSessions: data.weekly_sessions || data.totalSessions || data.sessions?.length || 3,
+    level: capitalizeFirstLetter(data.difficulty || data.level) || "Beginner",
+    estimatedDuration: data.sessionDurationMinutes || data.estimatedDuration || 50,
+    sessions: (data.sessions || []).map(mapSession)
   };
 };
 
 /**
- * Transform workout sessions from API format
+ * Mappe une session de l'API vers la structure de l'application
+ * @param {Object} session - Session de l'API
+ * @returns {Object} - Session mappée
  */
-const transformSessions = (sessions) => {
-  return sessions.map((session, index) => ({
-    id: `session-${index + 1}`,
-    sessionNumber: index + 1,
-    title: session.title || `Workout Session ${index + 1}`,
-    type: session.type || 'mixed',
-    duration: session.duration || 60,
-    description: session.description || '',
-    warmup: transformExerciseList(session.warmup || []),
-    mainWorkout: transformExerciseList(session.main_workout || []),
-    cooldown: transformExerciseList(session.cooldown || []),
-    restPeriods: session.rest_periods || { between_exercises: 30, between_sets: 60 },
-    difficulty: session.difficulty || 'beginner',
-    equipmentNeeded: session.equipment || ['bodyweight'],
-    targetMuscles: session.target_muscles || [],
-    calories: session.estimated_calories || 250
-  }));
+const mapSession = (session) => {
+  return {
+    id: `session_${session.day}`,
+    sessionNumber: session.day,
+    title: session.session_title || `Session ${session.day}`,
+    type: capitalizeFirstLetter(session.session_focus) || "Mixed",
+    warmup: session.warm_up ? session.warm_up.map((exercise, index) => mapExercise(exercise, index, 'warmup')) : [],
+    mainWorkout: session.main_exercises ? session.main_exercises.map((exercise, index) => mapExercise(exercise, index, 'main')) : [],
+    cooldown: session.cool_down ? session.cool_down.map((exercise, index) => mapExercise(exercise, index, 'cooldown')) : []
+  };
 };
 
 /**
- * Transform exercise lists from API format
+ * Mappe un exercice de l'API vers la structure de l'application
+ * @param {Object} exercise - Exercice de l'API
+ * @param {number} index - Index de l'exercice
+ * @param {string} type - Type d'exercice (warmup, main, cooldown)
+ * @returns {Object} - Exercice mappé
  */
-const transformExerciseList = (exercises) => {
-  return exercises.map((exercise, index) => ({
-    id: generateExerciseId(exercise.name, index),
-    name: exercise.name,
-    description: exercise.description || '',
-    instructions: exercise.instructions || [],
-    duration: exercise.duration || null,
-    sets: exercise.sets || null,
-    reps: exercise.reps || null,
-    weight: exercise.weight || null,
-    restTime: exercise.rest_time || 30,
-    difficulty: exercise.difficulty || 'beginner',
-    targetMuscles: exercise.target_muscles || [],
-    equipment: exercise.equipment || ['bodyweight'],
-    category: exercise.category || 'general',
-    imageUrl: exercise.image_url || null,
-    videoUrl: exercise.video_url || null,
-    tips: exercise.tips || [],
-    modifications: exercise.modifications || []
-  }));
+const mapExercise = (exercise, index, type) => {
+  const exerciseData = {
+    id: `ex_${type}_${index + 1}`,
+    name: exercise.exercise_name || `Exercice ${index + 1}`
+  };
+
+  // Gestion de la durée (conversion secondes vers minutes)
+  if (exercise.duration_seconds) {
+    exerciseData.duration = Math.round(exercise.duration_seconds / 60 * 10) / 10; // Arrondi à 1 décimale
+  }
+
+  // Gestion des sets et reps
+  if (exercise.sets) {
+    exerciseData.sets = exercise.sets;
+  }
+  if (exercise.reps) {
+    exerciseData.reps = exercise.reps;
+  }
+
+  return exerciseData;
 };
 
 /**
- * Generate unique workout ID
+ * Met en majuscule la première lettre d'une chaîne
+ * @param {string} str - Chaîne à transformer
+ * @returns {string} - Chaîne avec première lettre en majuscule
+ */
+const capitalizeFirstLetter = (str) => {
+  if (!str) return str;
+  return str.charAt(0).toUpperCase() + str.slice(1);
+};
+
+/**
+ * Génère un ID unique pour un plan d'entraînement
  */
 const generateWorkoutId = () => {
   const timestamp = Date.now();
   const random = Math.random().toString(36).substring(2, 8);
   return `workout-${timestamp}-${random}`;
-};
-
-/**
- * Generate unique exercise ID
- */
-const generateExerciseId = (exerciseName, index) => {
-  const nameSlug = exerciseName.toLowerCase().replace(/[^a-z0-9]/g, '-');
-  return `${nameSlug}-${index}`;
-};
-
-/**
- * Get exercise details by name (fallback for missing data)
- */
-export const getExerciseDetails = async (exerciseName) => {
-  try {
-    const apiClient = createApiClient();
-    
-    const response = await apiClient.get(`/exercise-details`, {
-      params: { name: exerciseName }
-    });
-    
-    return {
-      success: true,
-      data: response.data
-    };
-    
-  } catch (error) {
-    console.error('Error fetching exercise details:', error);
-    
-    // Return fallback data if API fails
-    return {
-      success: false,
-      data: {
-        name: exerciseName,
-        description: 'Exercise details not available',
-        instructions: ['Perform as directed by your fitness instructor'],
-        tips: ['Focus on proper form', 'Start with lighter weights/easier variations']
-      }
-    };
-  }
-};
-
-/**
- * Validate workout plan structure
- */
-export const validateWorkoutPlan = (workoutPlan) => {
-  const requiredFields = ['id', 'title', 'sessions'];
-  const missingFields = requiredFields.filter(field => !workoutPlan[field]);
-  
-  if (missingFields.length > 0) {
-    throw new Error(`Invalid workout plan: missing ${missingFields.join(', ')}`);
-  }
-  
-  if (!Array.isArray(workoutPlan.sessions) || workoutPlan.sessions.length === 0) {
-    throw new Error('Workout plan must contain at least one session');
-  }
-  
-  return true;
 };
 
 /**

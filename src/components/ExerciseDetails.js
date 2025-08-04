@@ -244,7 +244,7 @@ const CompletionSection = styled.div`
 `;
 
 const CompletionButton = styled.button`
-  background: ${props => props.completed ? props.theme.colors.success : props.theme.colors.primary};
+  background: ${props => props.$completed ? props.theme.colors.success : props.theme.colors.primary};
   color: white;
   border: none;
   padding: ${props => props.theme.spacing.lg} ${props => props.theme.spacing.xl};
@@ -303,7 +303,7 @@ const ExerciseDetails = ({ exercise, onBack }) => {
       setExerciseData(prev => ({ ...prev, ...additionalData }));
     } catch (error) {
       // If exercise doesn't exist in Firebase, use the provided data
-      console.log('Exercise not in Firebase, using provided data');
+      // This is expected for RapidAPI exercises, so we don't log an error
     }
   }, [exercise]);
 
@@ -517,7 +517,7 @@ const ExerciseDetails = ({ exercise, onBack }) => {
                 ✅ Exercise Progress
               </SectionTitle>
               <CompletionButton
-                completed={isCompleted}
+                $completed={isCompleted}
                 onClick={handleToggleCompletion}
                 disabled={isMarking}
               >

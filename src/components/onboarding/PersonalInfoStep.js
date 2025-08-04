@@ -6,7 +6,7 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import styled, { keyframes } from 'styled-components';
+import styled, { keyframes, css } from 'styled-components';
 import { useOnboarding } from '../../contexts/OnboardingContext';
 
 // Animations
@@ -31,7 +31,7 @@ const StepContainer = styled.div`
   max-width: 700px;
   margin: 0 auto;
   padding: ${props => props.theme.spacing.xl};
-  animation: ${slideInLeft} 0.6s ease-out;
+  ${css`animation: ${slideInLeft} 0.6s ease-out;`}
 `;
 
 const StepHeader = styled.div`
@@ -84,7 +84,7 @@ const Label = styled.label`
 
 const Input = styled.input`
   padding: ${props => props.theme.spacing.md};
-  border: 2px solid ${props => props.hasError ? props.theme.colors.error : props.theme.colors.border};
+  border: 2px solid ${props => props.$hasError ? props.theme.colors.error : props.theme.colors.border};
   border-radius: ${props => props.theme.borderRadius.medium};
   font-size: ${props => props.theme.fonts.sizes.md};
   font-family: ${props => props.theme.fonts.primary};
@@ -105,7 +105,7 @@ const Input = styled.input`
 
 const Select = styled.select`
   padding: ${props => props.theme.spacing.md};
-  border: 2px solid ${props => props.hasError ? props.theme.colors.error : props.theme.colors.border};
+  border: 2px solid ${props => props.$hasError ? props.theme.colors.error : props.theme.colors.border};
   border-radius: ${props => props.theme.borderRadius.medium};
   font-size: ${props => props.theme.fonts.sizes.md};
   font-family: ${props => props.theme.fonts.primary};
@@ -134,7 +134,7 @@ const BMISection = styled.div`
   margin-bottom: ${props => props.theme.spacing.xl};
   text-align: center;
   border: 2px solid ${props => props.theme.colors.primaryLight}30;
-  animation: ${props => props.show ? bmiPulse : 'none'} 2s ease infinite;
+  ${css`animation: ${props => props.show ? bmiPulse : 'none'} 2s ease infinite;`}
 `;
 
 const BMIValue = styled.div`
@@ -290,7 +290,7 @@ const PersonalInfoStep = () => {
               value={localData.name || ''}
               onChange={(e) => handleInputChange('name', e.target.value)}
               placeholder="Ton prénom"
-              hasError={validation.errors.name}
+              $hasError={validation.errors.name}
             />
             {validation.errors.name && (
               <ErrorMessage>{validation.errors.name}</ErrorMessage>
@@ -304,7 +304,7 @@ const PersonalInfoStep = () => {
             <Select
               value={localData.age || ''}
               onChange={(e) => handleInputChange('age', parseInt(e.target.value))}
-              hasError={validation.errors.age}
+              $hasError={validation.errors.age}
             >
               <option value="">Sélectionne ton âge</option>
               {Array.from({ length: 85 }, (_, i) => i + 16).map(age => (
@@ -327,7 +327,7 @@ const PersonalInfoStep = () => {
               placeholder="Taille en centimètres"
               min="120"
               max="220"
-              hasError={validation.errors.height}
+              $hasError={validation.errors.height}
             />
             {validation.errors.height && (
               <ErrorMessage>{validation.errors.height}</ErrorMessage>
@@ -345,7 +345,7 @@ const PersonalInfoStep = () => {
               placeholder="Poids en kilogrammes"
               min="30"
               max="200"
-              hasError={validation.errors.weight}
+              $hasError={validation.errors.weight}
             />
             {validation.errors.weight && (
               <ErrorMessage>{validation.errors.weight}</ErrorMessage>

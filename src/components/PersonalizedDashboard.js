@@ -6,7 +6,7 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import styled, { keyframes } from 'styled-components';
+import styled, { keyframes, css } from 'styled-components';
 import { userProgressService, workoutSessionService } from '../services/firebaseService';
 import userProfileService from '../services/userProfileService';
 import { getPersonalizedDashboardContent } from '../services/personalizationService';
@@ -129,7 +129,7 @@ const WelcomeLogo = styled.img`
   width: 120px;
   height: auto;
   border-radius: 20px;
-  animation: ${logoFloat} 4s ease-in-out infinite, ${logoPulse} 3s ease-in-out infinite;
+  ${css`animation: ${logoFloat} 4s ease-in-out infinite, ${logoPulse} 3s ease-in-out infinite;`}
   margin-bottom: ${props => props.theme.spacing.md};
   border: 3px solid rgba(255, 255, 255, 0.3);
 `;

@@ -10,6 +10,7 @@ import React, { useState, useCallback, useEffect } from 'react';
 import styled from 'styled-components';
 import { generateWorkoutPlan, getMockWorkoutPlan } from '../services/rapidApiService';
 import { workoutSessionService } from '../services/firebaseService';
+import { dailyWorkoutService } from '../services/dailyWorkoutService';
 import { useAppContext } from '../App';
 import LoadingSpinner from './LoadingSpinner';
 
@@ -292,8 +293,8 @@ const ActionButtons = styled.div`
 `;
 
 const ActionButton = styled.button`
-  background: ${props => props.primary ? props.theme.colors.primary : 'transparent'};
-  color: ${props => props.primary ? 'white' : props.theme.colors.primary};
+  background: ${props => props.$primary ? props.theme.colors.primary : 'transparent'};
+  color: ${props => props.$primary ? 'white' : props.theme.colors.primary};
   border: 2px solid ${props => props.theme.colors.primary};
   padding: ${props => props.theme.spacing.md} ${props => props.theme.spacing.lg};
   border-radius: ${props => props.theme.borderRadius.pill};
@@ -552,10 +553,14 @@ const WorkoutGenerator = ({ onWorkoutGenerated, onExerciseSelect, currentWorkout
   const [savedWorkouts, setSavedWorkouts] = useState([]);
   const [isCompleting, setIsCompleting] = useState(false);
   const [isCompleted, setIsCompleted] = useState(false);
+  const [hasCompletedToday, setHasCompletedToday] = useState(false);
+  const [isValidating, setIsValidating] = useState(false);
+  const [todaysStats, setTodaysStats] = useState(null);
 
   // Load saved workouts on component mount
   useEffect(() => {
     loadSavedWorkouts();
+    loadTodaysStatus();
   }, []);
 
   // Reset completion status when workout changes
@@ -572,6 +577,24 @@ const WorkoutGenerator = ({ onWorkoutGenerated, onExerciseSelect, currentWorkout
       setSavedWorkouts(workouts.slice(0, 5)); // Show last 5 workouts
     } catch (error) {
       console.error('Error loading saved workouts:', error);
+      // Don't show error for this non-critical operation
+    }
+  }, []);
+
+  /**
+   * Load today's workout status and stats
+   */
+  const loadTodaysStatus = useCallback(async () => {
+    try {
+      const hasCompleted = await dailyWorkoutService.hasCompletedWorkoutToday();
+      const weeklyStats = await dailyWorkoutService.getWeeklyStats();
+      
+      setHasCompletedToday(hasCompleted);
+      setTodaysStats(weeklyStats);
+      
+      console.log('📊 Today\'s status loaded:', { hasCompleted, weeklyStats });
+    } catch (error) {
+      console.error('Error loading today\'s status:', error);
       // Don't show error for this non-critical operation
     }
   }, []);
@@ -681,6 +704,34 @@ const WorkoutGenerator = ({ onWorkoutGenerated, onExerciseSelect, currentWorkout
   }, [currentWorkout, isCompleting, handleError, loadSavedWorkouts]);
 
   /**
+   * Validate today's workout and record it in daily progress
+   */
+  const handleValidateDailyWorkout = useCallback(async () => {
+    if (!currentWorkout || isValidating || hasCompletedToday) return;
+    
+    try {
+      setIsValidating(true);
+      
+      // Record in daily workout tracking
+      await dailyWorkoutService.validateWorkoutSession(currentWorkout);
+      
+      // Update today's status
+      setHasCompletedToday(true);
+      
+      // Refresh stats
+      await loadTodaysStatus();
+      
+      console.log('🎉 Daily workout validated and recorded!');
+      
+    } catch (error) {
+      console.error('Error validating daily workout:', error);
+      handleError(new Error('Failed to validate daily workout'));
+    } finally {
+      setIsValidating(false);
+    }
+  }, [currentWorkout, isValidating, hasCompletedToday, handleError, loadTodaysStatus]);
+
+  /**
    * Render exercise phase with enhanced, clear instructions
    */
   const renderExercisePhase = (title, exercises) => {
@@ -702,10 +753,10 @@ const WorkoutGenerator = ({ onWorkoutGenerated, onExerciseSelect, currentWorkout
                     <MetricBadge>⏱️ {exercise.duration} min</MetricBadge>
                   )}
                   {exercise.sets && (
-                    <MetricBadge>📊 {exercise.sets} sets</MetricBadge>
+                    <MetricBadge>📊 {exercise.sets} séries</MetricBadge>
                   )}
                   {exercise.reps && (
-                    <MetricBadge>🔄 {exercise.reps} reps</MetricBadge>
+                    <MetricBadge>🔄 {exercise.reps} répétitions</MetricBadge>
                   )}
                   {exercise.pattern && (
                     <PatternBadge>🔄 {exercise.pattern}</PatternBadge>
@@ -719,7 +770,7 @@ const WorkoutGenerator = ({ onWorkoutGenerated, onExerciseSelect, currentWorkout
 
               {exercise.instructions && exercise.instructions.length > 0 && (
                 <InstructionSection>
-                  <InstructionTitle>📝 Instructions:</InstructionTitle>
+                  <InstructionTitle>📝 Instructions :</InstructionTitle>
                   <InstructionList>
                     {exercise.instructions.map((instruction, index) => (
                       <InstructionItem key={index}>
@@ -733,7 +784,7 @@ const WorkoutGenerator = ({ onWorkoutGenerated, onExerciseSelect, currentWorkout
 
               {exercise.exercises && exercise.exercises.length > 0 && (
                 <SubExerciseSection>
-                  <SubExerciseTitle>💪 Exercises in this set:</SubExerciseTitle>
+                  <SubExerciseTitle>💪 Exercices dans ce set :</SubExerciseTitle>
                   <SubExerciseList>
                     {exercise.exercises.map((subExercise, index) => (
                       <SubExerciseItem key={index}>{subExercise}</SubExerciseItem>
@@ -744,7 +795,7 @@ const WorkoutGenerator = ({ onWorkoutGenerated, onExerciseSelect, currentWorkout
 
               {exercise.tips && exercise.tips.length > 0 && (
                 <TipsSection>
-                  <TipsTitle>💡 Tips:</TipsTitle>
+                  <TipsTitle>💡 Conseils :</TipsTitle>
                   <TipsList>
                     {exercise.tips.map((tip, index) => (
                       <TipItem key={index}>{tip}</TipItem>
@@ -755,7 +806,7 @@ const WorkoutGenerator = ({ onWorkoutGenerated, onExerciseSelect, currentWorkout
 
               {exercise.modifications && exercise.modifications.length > 0 && (
                 <ModificationSection>
-                  <ModificationTitle>🔧 Easier Options:</ModificationTitle>
+                  <ModificationTitle>🔧 Options plus faciles :</ModificationTitle>
                   <ModificationList>
                     {exercise.modifications.map((mod, index) => (
                       <ModificationItem key={index}>{mod}</ModificationItem>
@@ -766,7 +817,7 @@ const WorkoutGenerator = ({ onWorkoutGenerated, onExerciseSelect, currentWorkout
 
               {exercise.variations && exercise.variations.length > 0 && (
                 <VariationSection>
-                  <VariationTitle>🚀 Advanced Variations:</VariationTitle>
+                  <VariationTitle>🚀 Variations avancées :</VariationTitle>
                   <VariationList>
                     {exercise.variations.map((variation, index) => (
                       <VariationItem key={variation}>{variation}</VariationItem>
@@ -775,7 +826,7 @@ const WorkoutGenerator = ({ onWorkoutGenerated, onExerciseSelect, currentWorkout
                 </VariationSection>
               )}
 
-              <ClickHint>Click for more details</ClickHint>
+              <ClickHint>Cliquez pour plus de détails</ClickHint>
             </EnhancedExerciseCard>
           ))}
         </ExerciseList>
@@ -787,35 +838,66 @@ const WorkoutGenerator = ({ onWorkoutGenerated, onExerciseSelect, currentWorkout
     <GeneratorContainer>
       {/* Header Section */}
       <GeneratorHeader>
-        <Title>Generate Your Perfect Workout</Title>
+        <Title>Générez votre entraînement parfait</Title>
         <Subtitle>
-          Get a personalized beginner-friendly workout plan combining running and strength training, 
-          designed for 3 sessions per week to help you build fitness gradually and effectively.
+          Obtenez un plan d'entraînement personnalisé pour débutant, combinant course à pied et musculation,
+          conçu pour 3 séances par semaine afin de développer votre forme progressivement et efficacement.
         </Subtitle>
       </GeneratorHeader>
+
+      {/* Daily Status Section */}
+      {todaysStats && (
+        <GenerateSection>
+          <h3 style={{ textAlign: 'center', marginBottom: '1.5rem', color: '#ff69b4' }}>
+            📊 Votre progression aujourd'hui
+          </h3>
+          <WorkoutInfo>
+            <InfoCard>
+              <InfoIcon>{hasCompletedToday ? '✅' : '⭕'}</InfoIcon>
+              <InfoTitle>Aujourd'hui</InfoTitle>
+              <InfoValue>{hasCompletedToday ? 'Terminé' : 'À faire'}</InfoValue>
+            </InfoCard>
+            <InfoCard>
+              <InfoIcon>🔥</InfoIcon>
+              <InfoTitle>Série</InfoTitle>
+              <InfoValue>{todaysStats.streak} jours</InfoValue>
+            </InfoCard>
+            <InfoCard>
+              <InfoIcon>📈</InfoIcon>
+              <InfoTitle>Cette semaine</InfoTitle>
+              <InfoValue>{todaysStats.totalWorkouts}/7 jours</InfoValue>
+            </InfoCard>
+            <InfoCard>
+              <InfoIcon>⏱️</InfoIcon>
+              <InfoTitle>Temps total</InfoTitle>
+              <InfoValue>{todaysStats.totalDuration} min</InfoValue>
+            </InfoCard>
+          </WorkoutInfo>
+        </GenerateSection>
+      )}
 
       {/* Generation Section */}
       <GenerateSection>
         <WorkoutInfo>
           <InfoCard>
             <InfoIcon>🎯</InfoIcon>
-            <InfoTitle>Level</InfoTitle>
-            <InfoValue>Beginner</InfoValue>
+            <InfoTitle>Focus</InfoTitle>
+            <InfoValue>Course + Poids du Corps</InfoValue>
           </InfoCard>
           <InfoCard>
-            <InfoIcon>💪</InfoIcon>
-            <InfoTitle>Goals</InfoTitle>
-            <InfoValue>Running + Strength</InfoValue>
+            <InfoIcon>🏃‍♀️</InfoIcon>
+            <InfoTitle>Types</InfoTitle>
+            <InfoValue>Running + Bodyweight</InfoValue>
           </InfoCard>
           <InfoCard>
             <InfoIcon>📅</InfoIcon>
-            <InfoTitle>Frequency</InfoTitle>
-            <InfoValue>3x per week</InfoValue>
+            <InfoTitle>Fréquence</InfoTitle>
+            <InfoValue>3x par semaine</InfoValue>
           </InfoCard>
           <InfoCard>
             <InfoIcon>⏰</InfoIcon>
-            <InfoTitle>Duration</InfoTitle>
-            <InfoValue>45-60 minutes</InfoValue>
+            <InfoTitle>Durée</InfoTitle>
+            <InfoValue>45 minutes</InfoValue>
           </InfoCard>
         </WorkoutInfo>
 
@@ -826,10 +908,10 @@ const WorkoutGenerator = ({ onWorkoutGenerated, onExerciseSelect, currentWorkout
           {isGenerating ? (
             <>
               <LoadingSpinner size="small" text="" />
-              Generating Your Workout...
+              Génération de votre entraînement...
             </>
           ) : (
-            '✨ Generate New Workout Plan'
+            '✨ Générer un nouveau plan d\'entraînement'
           )}
         </GenerateButton>
       </GenerateSection>
@@ -843,15 +925,15 @@ const WorkoutGenerator = ({ onWorkoutGenerated, onExerciseSelect, currentWorkout
             <WorkoutStats>
               <StatItem>
                 <strong>{currentWorkout.totalSessions}</strong>
-                <span>Sessions</span>
+                <span>Séances</span>
               </StatItem>
               <StatItem>
                 <strong>{currentWorkout.estimatedDuration} min</strong>
-                <span>Per Session</span>
+                <span>Par séance</span>
               </StatItem>
               <StatItem>
                 <strong>{currentWorkout.level}</strong>
-                <span>Difficulty</span>
+                <span>Difficulté</span>
               </StatItem>
             </WorkoutStats>
           </WorkoutHeader>
@@ -861,7 +943,7 @@ const WorkoutGenerator = ({ onWorkoutGenerated, onExerciseSelect, currentWorkout
             {currentWorkout.sessions?.map((session) => (
               <SessionCard key={session.id}>
                 <SessionHeader>
-                  <SessionNumber>Session {session.sessionNumber}</SessionNumber>
+                  <SessionNumber>Séance {session.sessionNumber}</SessionNumber>
                   <SessionTitle>{session.title}</SessionTitle>
                   <SessionType>{session.type}</SessionType>
                 </SessionHeader>
@@ -869,9 +951,9 @@ const WorkoutGenerator = ({ onWorkoutGenerated, onExerciseSelect, currentWorkout
                 <SessionContent>
                   <SessionDescription>{session.description}</SessionDescription>
                   
-                  {renderExercisePhase('Warm-up', session.warmup)}
-                  {renderExercisePhase('Main Workout', session.mainWorkout)}
-                  {renderExercisePhase('Cool-down', session.cooldown)}
+                  {renderExercisePhase('Échauffement', session.warmup)}
+                  {renderExercisePhase('Entraînement principal', session.mainWorkout)}
+                  {renderExercisePhase('Retour au calme', session.cooldown)}
                 </SessionContent>
               </SessionCard>
             ))}
@@ -880,22 +962,42 @@ const WorkoutGenerator = ({ onWorkoutGenerated, onExerciseSelect, currentWorkout
           {/* Action Buttons */}
           <ActionButtons>
             <ActionButton onClick={handleGenerateWorkout}>
-              🔄 Generate New Plan
+              🔄 Générer un nouveau plan
             </ActionButton>
             <ActionButton onClick={handleSaveWorkout}>
-              ❤️ Save to Favorites
+              ❤️ Ajouter aux favoris
             </ActionButton>
             <ActionButton 
-              primary 
+              $primary 
               onClick={handleCompleteWorkout}
               disabled={isCompleting || isCompleted}
             >
               {isCompleting ? (
-                <>Loading...</>
+                <>Chargement...</>
               ) : isCompleted ? (
-                '✅ Completed!'
+                '✅ Terminé !'
               ) : (
-                '✨ Mark as Complete'
+                '✨ Marquer comme terminé'
+              )}
+            </ActionButton>
+            <ActionButton 
+              $primary 
+              onClick={handleValidateDailyWorkout}
+              disabled={isValidating || hasCompletedToday}
+              style={{
+                background: hasCompletedToday ? '#4caf50' : undefined,
+                transform: hasCompletedToday ? 'none' : undefined
+              }}
+            >
+              {isValidating ? (
+                <>
+                  <LoadingSpinner size="small" text="" />
+                  Validation...
+                </>
+              ) : hasCompletedToday ? (
+                '🎉 Validé aujourd\'hui !'
+              ) : (
+                '📊 Valider l\'entraînement du jour'
               )}
             </ActionButton>
           </ActionButtons>

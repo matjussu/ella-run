@@ -10,7 +10,7 @@ import styled, { keyframes, css } from 'styled-components';
 import { userProgressService, workoutSessionService } from '../services/firebaseService';
 import userProfileService from '../services/userProfileService';
 import { getPersonalizedDashboardContent } from '../services/personalizationService';
-import logoImg from '../logo_run.png';
+import logoImg from '../logo_run.svg';
 
 // Get current day for personalized greetings
 const getCurrentGreeting = () => {
@@ -22,7 +22,7 @@ const getCurrentGreeting = () => {
   else if (hour < 17) greeting = 'Bon après-midi';
   else greeting = 'Bonsoir';
   
-  return `${greeting}, Ella ! Bonne ${day} ! 🌟`;
+  return `${greeting}, Ella ! Bon ${day} ! 🌟`;
 };
 
 // Get personalized daily messages
@@ -54,7 +54,7 @@ const getWorkoutSuggestion = () => {
     },
     3: { // Mercredi
       title: "🏃‍♀️ Guerrière du Mercredi",
-      description: "Journée parfaite pour les squats et le renforcement du core !",
+      description: "Journée parfaite pour les squats et le renforcement du core abdominale!",
       focus: "Squats + Abdos",
       emoji: "⚡"
     },

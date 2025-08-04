@@ -21,9 +21,9 @@ export const getPersonalizedGreeting = (profile) => {
   else timeGreeting = 'Bonsoir';
   
   const personalizedGreetings = [
-    `${timeGreeting}, ${userName} ! Prête pour une super ${day} ? 🌟`,
+    `${timeGreeting}, ${userName} ! Prête pour un super ${day} ? 🌟`,
     `${timeGreeting} ma championne ${userName} ! C'est parti pour une journée incroyable ! ✨`,
-    `Salut ${userName} ! Cette ${day} va être fantastique ! 💪`,
+    `Salut ${userName} ! Ce ${day} va être fantastique ! 💪`,
     `${timeGreeting}, ${userName} ! Tu vas briller aujourd'hui ! 🔥`
   ];
 

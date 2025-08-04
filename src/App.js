@@ -15,6 +15,7 @@ import PersonalizedDashboard from './components/PersonalizedDashboard';
 import EllaProfile from './components/EllaProfile';
 import MilestoneTracker from './components/MilestoneTracker';
 import OnboardingFlow from './components/OnboardingFlow';
+import PWAInstallPrompt from './components/PWAInstallPrompt';
 import { userProgressService } from './services/firebaseService';
 import userProfileService from './services/userProfileService';
 import { generateWorkoutPlan } from './services/rapidApiService';
@@ -335,8 +336,44 @@ function App() {
   // CORRECTED: This useEffect now runs ONLY ONCE when the app first mounts.
   useEffect(() => {
     initializeApp();
+    registerServiceWorker();
   }, []); // <-- THE FIX: An empty dependency array tells React to run this only once.
 
+
+  /**
+   * Register service worker for PWA functionality
+   */
+  const registerServiceWorker = async () => {
+    if ('serviceWorker' in navigator && process.env.NODE_ENV === 'production') {
+      try {
+        console.log('🔧 PWA: Registering service worker...');
+        
+        const registration = await navigator.serviceWorker.register('/sw.js');
+        
+        console.log('✅ PWA: Service worker registered successfully');
+        
+        // Listen for updates
+        registration.addEventListener('updatefound', () => {
+          console.log('🔄 PWA: New version available');
+          const newWorker = registration.installing;
+          
+          newWorker.addEventListener('statechange', () => {
+            if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+              console.log('🆕 PWA: New version ready to install');
+              // Could show an update notification here
+            }
+          });
+        });
+        
+      } catch (error) {
+        console.error('❌ PWA: Service worker registration failed:', error);
+      }
+    } else if (process.env.NODE_ENV === 'development') {
+      console.log('🔧 PWA: Service worker disabled in development mode');
+    } else {
+      console.log('❌ PWA: Service worker not supported');
+    }
+  };
 
   /**
    * Initialize the application and check onboarding status - FIXED VERSION
@@ -617,6 +654,9 @@ function App() {
       <ErrorBoundary onError={handleError}>
         <AppContext.Provider value={contextValue}>
           <AppContainer>
+            {/* PWA Install Prompt */}
+            <PWAInstallPrompt />
+            
             {/* Header */}
             <Header>
               <HeaderContent>

@@ -9,6 +9,7 @@
 import React, { useState, useCallback, useEffect } from 'react';
 import styled from 'styled-components';
 import { exerciseService } from '../services/firebaseService';
+import { getExerciseVisual } from '../services/exerciseVisualsService';
 import { useAppContext } from '../App';
 import LoadingSpinner from './LoadingSpinner';
 
@@ -416,29 +417,37 @@ const ExerciseDetails = ({ exercise, onBack }) => {
           )}
 
           {/* Target Muscles */}
-          {exerciseData.targetMuscles && exerciseData.targetMuscles.length > 0 && (
+          {exerciseData.targetMuscles && (
             <Section>
               <SectionTitle>
                 🎯 Target Muscles
               </SectionTitle>
               <TagsList>
-                {exerciseData.targetMuscles.map((muscle, index) => (
-                  <Tag key={index}>{muscle}</Tag>
-                ))}
+                {Array.isArray(exerciseData.targetMuscles) ? (
+                  exerciseData.targetMuscles.map((muscle, index) => (
+                    <Tag key={index}>{muscle}</Tag>
+                  ))
+                ) : (
+                  <Tag>{exerciseData.targetMuscles}</Tag>
+                )}
               </TagsList>
             </Section>
           )}
 
           {/* Equipment Needed */}
-          {exerciseData.equipment && exerciseData.equipment.length > 0 && (
+          {exerciseData.equipment && (
             <Section>
               <SectionTitle>
                 🏋️ Equipment
               </SectionTitle>
               <TagsList>
-                {exerciseData.equipment.map((item, index) => (
-                  <Tag key={index}>{item}</Tag>
-                ))}
+                {Array.isArray(exerciseData.equipment) ? (
+                  exerciseData.equipment.map((item, index) => (
+                    <Tag key={index}>{item}</Tag>
+                  ))
+                ) : (
+                  <Tag>{exerciseData.equipment}</Tag>
+                )}
               </TagsList>
             </Section>
           )}
@@ -477,36 +486,47 @@ const ExerciseDetails = ({ exercise, onBack }) => {
             </Section>
           )}
 
-          {/* Media Placeholder */}
+          {/* Visual Guide */}
           <Section>
             <SectionTitle>
-              🎥 Visual Guide
+              🎥 Guide Visuel
             </SectionTitle>
             <MediaContainer>
-              {exerciseData.imageUrl || exerciseData.videoUrl ? (
-                <div>
-                  {exerciseData.imageUrl && (
-                    <img 
-                      src={exerciseData.imageUrl} 
-                      alt={exerciseData.name}
-                      style={{ maxWidth: '100%', borderRadius: '8px' }}
-                    />
-                  )}
-                  {exerciseData.videoUrl && (
-                    <video 
-                      controls 
-                      style={{ maxWidth: '100%', borderRadius: '8px' }}
-                    >
-                      <source src={exerciseData.videoUrl} type="video/mp4" />
-                      Your browser does not support the video tag.
-                    </video>
-                  )}
-                </div>
-              ) : (
-                <PlaceholderImage>
-                  📸 Exercise demonstration image/video will be available soon
-                </PlaceholderImage>
-              )}
+              {(() => {
+                const visualGuide = getExerciseVisual(exerciseData.name);
+                if (visualGuide && visualGuide.image) {
+                  return (
+                    <div>
+                      <img 
+                        src={visualGuide.image} 
+                        alt={`Guide visuel pour ${exerciseData.name}`}
+                        style={{ 
+                          maxWidth: '100%', 
+                          borderRadius: '12px',
+                          marginBottom: '1rem',
+                          boxShadow: '0 4px 12px rgba(0,0,0,0.1)'
+                        }}
+                      />
+                      {visualGuide.description && (
+                        <p style={{ 
+                          textAlign: 'center', 
+                          fontStyle: 'italic',
+                          color: '#666',
+                          marginTop: '0.5rem'
+                        }}>
+                          {visualGuide.description}
+                        </p>
+                      )}
+                    </div>
+                  );
+                } else {
+                  return (
+                    <PlaceholderImage>
+                      📸 Guide visuel pour {exerciseData.name}
+                    </PlaceholderImage>
+                  );
+                }
+              })()}
             </MediaContainer>
           </Section>
 

@@ -400,9 +400,9 @@ const ProgressDashboard = ({ progress, onRefresh }) => {
     <DashboardContainer>
       {/* Header */}
       <DashboardHeader>
-        <Title>💪 Your Fitness Journey</Title>
+        <Title>💪 Ton Recap !</Title>
         <Subtitle>
-          Track your progress, celebrate achievements, and stay motivated on your fitness journey.
+          Suis tes progrés, célèbre tes reussites, et reste motivée mon doudou hehe !.
         </Subtitle>
         <RefreshButton onClick={handleRefresh} disabled={isRefreshing}>
           {isRefreshing ? (
@@ -424,29 +424,29 @@ const ProgressDashboard = ({ progress, onRefresh }) => {
           <StatCard>
             <StatIcon>📊</StatIcon>
             <StatValue>{progressStats.totalSessions}</StatValue>
-            <StatLabel>Total Workouts</StatLabel>
-            <StatSubtext>Generated so far</StatSubtext>
+            <StatLabel>Nombre d'entrainement</StatLabel>
+            <StatSubtext>Généré</StatSubtext>
           </StatCard>
           
           <StatCard>
             <StatIcon>✅</StatIcon>
             <StatValue>{progressStats.completedSessions}</StatValue>
-            <StatLabel>Completed</StatLabel>
-            <StatSubtext>Workouts finished</StatSubtext>
+            <StatLabel>Complété</StatLabel>
+            <StatSubtext>Entrainement terminé !</StatSubtext>
           </StatCard>
           
           <StatCard>
             <StatIcon>📈</StatIcon>
             <StatValue>{progressStats.completionRate}%</StatValue>
-            <StatLabel>Success Rate</StatLabel>
-            <StatSubtext>Completion percentage</StatSubtext>
+            <StatLabel>Taux de succés</StatLabel>
+            <StatSubtext>Pourcentage</StatSubtext>
           </StatCard>
           
           <StatCard>
             <StatIcon>🔥</StatIcon>
             <StatValue>{progressStats.streak}</StatValue>
-            <StatLabel>Current Streak</StatLabel>
-            <StatSubtext>Consecutive workouts</StatSubtext>
+            <StatLabel>Nombre d'entrainement de suite</StatLabel>
+            <StatSubtext>Abérrant</StatSubtext>
           </StatCard>
         </StatsGrid>
       ) : (
@@ -488,7 +488,7 @@ const ProgressDashboard = ({ progress, onRefresh }) => {
 
       {/* Workout History */}
       <Section>
-        <SectionTitle>📅 Recent Workouts</SectionTitle>
+        <SectionTitle>📅 Entrainements récents</SectionTitle>
         {workoutHistory.length > 0 ? (
           <WorkoutHistoryGrid>
             {workoutHistory.map((workout) => (

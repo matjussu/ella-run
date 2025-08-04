@@ -19,14 +19,8 @@ const RAPIDAPI_CONFIG = {
   }
 };
 
-// URL des endpoints de l'API (basés sur la documentation trouvée)
-const API_BASE_URL = 'https://ai-workout-planner-exercise-fitness-nutrition-guide.p.rapidapi.com/workoutplan';
-const ENDPOINTS = {
-  WORKOUT_PLANNER: '/generateWorkoutPlan', // Endpoint probable pour générer un plan
-  AI_WORKOUT: '/ai-workout', // Endpoint alternatif
-  BODY_PARTS: '/body-parts',
-  EQUIPMENT: '/equipment'
-};
+// URL de base de l'API
+const API_BASE_URL = 'https://ai-workout-planner-exercise-fitness-nutrition-guide.p.rapidapi.com';
 
 // Validate required environment variables
 const validateEnvironmentVariables = () => {
@@ -38,40 +32,10 @@ const validateEnvironmentVariables = () => {
   }
 };
 
-/**
- * Teste la connectivité avec l'API AI Workout Planner
- */
-export const testApiConnection = async () => {
-  try {
-    validateEnvironmentVariables();
-    
-    console.log('🔍 Test de connectivité avec l\'API...');
-    
-    // Essayer d'abord l'endpoint racine pour voir si l'API répond
-    const response = await axios.get(`${API_BASE_URL}/`, RAPIDAPI_CONFIG);
-    
-    console.log('✅ API accessible - Statut:', response.status);
-    console.log('📋 Réponse:', response.data);
-    
-    return {
-      success: true,
-      data: response.data,
-      status: response.status
-    };
-    
-  } catch (error) {
-    console.log('❌ Test de connectivité échoué:', error.response?.status, error.message);
-    return {
-      success: false,
-      error: error.message,
-      status: error.response?.status
-    };
-  }
-};
 
 /**
  * Génère un plan d'entraînement personnalisé en utilisant l'API AI Workout Planner de RapidAPI
- * Fonction modifiée pour essayer différents endpoints possibles
+ * Fonction basée sur la documentation officielle de l'API
  */
 export const generateWorkoutPlan = async () => {
   try {
@@ -80,99 +44,61 @@ export const generateWorkoutPlan = async () => {
 
     console.log('🔥 Appel à l\'API AI Workout Planner...');
 
-    // D'abord, tester la connectivité de base
-    const connectionTest = await testApiConnection();
-    if (!connectionTest.success) {
-      throw new Error(`API non accessible: ${connectionTest.error}`);
-    }
-
-    // Paramètres pour la requête GET (convertis en query parameters)
-    const queryParams = {
-      fitness_level: "beginner",
-      goal: "running endurance,strength training",
-      targetMuscles: "full body,squats,abs",
-      sessionsPerWeek: 3,
-      sessionDurationMinutes: 50,
-      language: "fr"
+    // Corps de la requête selon la documentation officielle
+    // Spécialisé pour course à pied et exercices au poids du corps uniquement
+    const requestBody = {
+      goal: "Build endurance and strength",
+      fitness_level: "Beginner",
+      preferences: ["Running", "Bodyweight exercises", "Cardio"],
+      health_conditions: ["None"],
+      equipment_available: ["None", "No equipment needed"],
+      exercise_types: ["Running", "Bodyweight", "Calisthenics"],
+      schedule: {
+        days_per_week: 3,
+        session_duration: 45
+      },
+      plan_duration_weeks: 4,
+      lang: "fr"
     };
 
-    console.log('📊 Paramètres de la requête:', queryParams);
+    console.log('📊 Corps de la requête:', requestBody);
 
-    // Liste des endpoints à essayer (basés sur des APIs similaires)
-    const endpointsToTry = [
-      '/exercises', // Liste des exercices disponibles
-      '/bodyparts', // Parties du corps
-      '/equipment', // Équipements disponibles
-      '/workout', // Plans d'entraînement
-      '/generate', // Génération de plan
-      '/plan', // Plan d'entraînement
-      '/ai-workout-planner', // Nom complet de l'API
-      '/workouts' // Version plurielle
-    ];
+    // Appel POST à l'endpoint officiel
+    const response = await axios.post(
+      `${API_BASE_URL}/generateWorkoutPlan`,
+      requestBody,
+      RAPIDAPI_CONFIG
+    );
 
-    let lastError = null;
-    let successfulEndpoint = null;
+    console.log('✅ Réponse reçue de l\'API:', response.data);
 
-    // Essayer chaque endpoint
-    for (const endpoint of endpointsToTry) {
-      try {
-        console.log(`🎯 Essai de l'endpoint: ${endpoint}`);
-        
-        const url = `${API_BASE_URL}${endpoint}`;
-        const response = await axios.get(url, {
-          ...RAPIDAPI_CONFIG,
-          params: endpoint === '/exercises' || endpoint === '/bodyparts' || endpoint === '/equipment' 
-            ? {} // Pas de paramètres pour les endpoints de liste
-            : queryParams
-        });
-
-        console.log('✅ Réponse reçue de l\'API avec l\'endpoint:', endpoint);
-        console.log('📋 Données reçues:', response.data);
-
-        successfulEndpoint = endpoint;
-
-        // Si on obtient des données d'exercices, on peut construire un plan basique
-        if (endpoint === '/exercises' && Array.isArray(response.data)) {
-          const customPlan = createWorkoutFromExercises(response.data);
-          return {
-            success: true,
-            data: customPlan,
-            source: 'exercises_endpoint'
-          };
-        }
-
-        // Sinon, essayer de mapper la réponse
-        const mappedData = mapApiResponseToAppStructure(response.data);
-        return {
-          success: true,
-          data: mappedData,
-          source: endpoint
-        };
-
-      } catch (endpointError) {
-        console.log(`❌ Endpoint ${endpoint} failed:`, endpointError.response?.status || endpointError.message);
-        lastError = endpointError;
-        continue; // Essayer le prochain endpoint
-      }
-    }
-
-    // Si tous les endpoints ont échoué, lever la dernière erreur
-    throw lastError;
+    // Mapper la réponse vers la structure de l'application
+    const mappedData = mapApiResponseToAppStructure(response.data);
+    
+    return {
+      success: true,
+      data: mappedData,
+      source: 'rapidapi_official_endpoint'
+    };
 
   } catch (error) {
-    console.error('❌ Erreur lors de l\'appel API (tous endpoints):', error);
+    console.error('❌ Erreur lors de l\'appel API:', error);
     
     let errorMessage = 'Échec de la génération du plan d\'entraînement depuis l\'API.';
     
     if (error.response) {
       errorMessage += ` Status: ${error.response.status}`;
       if (error.response.status === 404) {
-        errorMessage += ' - Endpoints non trouvés.';
+        errorMessage += ' - Endpoint non trouvé.';
       } else if (error.response.status === 403) {
         errorMessage += ' - Accès interdit. Vérifiez votre clé API.';
+      } else if (error.response.status === 401) {
+        errorMessage += ' - Clé API invalide.';
       }
     } else if (error.request) {
       errorMessage += ' Problème de réseau.';
+    } else {
+      errorMessage += ` Erreur: ${error.message}`;
     }
 
     // Retourner une erreur avec suggestion de fallback
@@ -190,61 +116,80 @@ export const generateWorkoutPlan = async () => {
  * @returns {Object} - Données mappées selon la structure de l'application
  */
 const mapApiResponseToAppStructure = (apiResponse) => {
-  // L'API peut retourner les données directement ou dans un objet "data"
-  const data = apiResponse.data || apiResponse;
+  // Extraction des données selon la structure officielle de l'API
+  const result = apiResponse.result || apiResponse;
   
   return {
     id: generateWorkoutId(),
-    title: data.plan_title || data.title || "Programme Débutant Course & Force",
-    description: data.plan_description || data.description || "Un plan pour développer votre endurance et votre force.",
-    totalSessions: data.weekly_sessions || data.totalSessions || data.sessions?.length || 3,
-    level: capitalizeFirstLetter(data.difficulty || data.level) || "Beginner",
-    estimatedDuration: data.sessionDurationMinutes || data.estimatedDuration || 50,
-    sessions: (data.sessions || []).map(mapSession)
+    title: result.goal || "Programme d'entraînement personnalisé",
+    description: `Plan de ${result.total_weeks || 4} semaines pour ${result.goal || 'améliorer votre forme'}`,
+    totalSessions: result.schedule?.days_per_week || 3,
+    level: capitalizeFirstLetter(result.fitness_level) || "Beginner",
+    estimatedDuration: result.schedule?.session_duration || 45,
+    sessions: (result.exercises || []).map((dayData, index) => mapDayToSession(dayData, index + 1))
   };
 };
 
 /**
- * Mappe une session de l'API vers la structure de l'application
- * @param {Object} session - Session de l'API
+ * Mappe une journée d'exercices de l'API vers une session de l'application
+ * @param {Object} dayData - Données d'une journée d'exercices
+ * @param {number} sessionNumber - Numéro de la session
  * @returns {Object} - Session mappée
  */
-const mapSession = (session) => {
+const mapDayToSession = (dayData, sessionNumber) => {
   return {
-    id: `session_${session.day}`,
-    sessionNumber: session.day,
-    title: session.session_title || `Session ${session.day}`,
-    type: capitalizeFirstLetter(session.session_focus) || "Mixed",
-    warmup: session.warm_up ? session.warm_up.map((exercise, index) => mapExercise(exercise, index, 'warmup')) : [],
-    mainWorkout: session.main_exercises ? session.main_exercises.map((exercise, index) => mapExercise(exercise, index, 'main')) : [],
-    cooldown: session.cool_down ? session.cool_down.map((exercise, index) => mapExercise(exercise, index, 'cooldown')) : []
+    id: `session_${sessionNumber}`,
+    sessionNumber: sessionNumber,
+    title: `Session ${sessionNumber} - ${dayData.day || 'Entraînement'}`,
+    type: "Mixed",
+    description: `Entraînement du ${dayData.day || 'jour ' + sessionNumber}`,
+    warmup: [], // L'API ne sépare pas warmup/main/cooldown
+    mainWorkout: (dayData.exercises || []).map((exercise, index) => mapApiExercise(exercise, index)),
+    cooldown: []
   };
 };
 
 /**
  * Mappe un exercice de l'API vers la structure de l'application
- * @param {Object} exercise - Exercice de l'API
+ * @param {Object} exercise - Exercice de l'API selon la structure officielle
  * @param {number} index - Index de l'exercice
- * @param {string} type - Type d'exercice (warmup, main, cooldown)
  * @returns {Object} - Exercice mappé
  */
-const mapExercise = (exercise, index, type) => {
+const mapApiExercise = (exercise, index) => {
   const exerciseData = {
-    id: `ex_${type}_${index + 1}`,
-    name: exercise.exercise_name || `Exercice ${index + 1}`
+    id: `ex_api_${index + 1}_${Date.now()}`,
+    name: exercise.name || `Exercice ${index + 1}`
   };
 
-  // Gestion de la durée (conversion secondes vers minutes)
-  if (exercise.duration_seconds) {
-    exerciseData.duration = Math.round(exercise.duration_seconds / 60 * 10) / 10; // Arrondi à 1 décimale
+  // Mapping des champs selon la documentation
+  if (exercise.duration) {
+    // Conversion si la durée est au format "20 minutes"
+    const durationMatch = exercise.duration.match(/(\d+)\s*min/i);
+    exerciseData.duration = durationMatch ? parseInt(durationMatch[1]) : exercise.duration;
   }
 
-  // Gestion des sets et reps
   if (exercise.sets) {
     exerciseData.sets = exercise.sets;
   }
-  if (exercise.reps) {
-    exerciseData.reps = exercise.reps;
+
+  if (exercise.repetitions && exercise.repetitions !== "N/A") {
+    exerciseData.reps = exercise.repetitions;
+  }
+
+  if (exercise.equipment && exercise.equipment !== "None") {
+    exerciseData.equipment = exercise.equipment;
+  }
+
+  // Instructions générées basées sur le type d'exercice
+  exerciseData.instructions = [`Effectuez ${exerciseData.name}`];
+  if (exerciseData.sets && exerciseData.reps) {
+    exerciseData.instructions.push(`${exerciseData.sets} séries de ${exerciseData.reps} répétitions`);
+  }
+  if (exerciseData.duration) {
+    exerciseData.instructions.push(`Durée : ${exerciseData.duration} minutes`);
+  }
+  if (exerciseData.equipment) {
+    exerciseData.instructions.push(`Équipement : ${exerciseData.equipment}`);
   }
 
   return exerciseData;
@@ -269,36 +214,6 @@ const generateWorkoutId = () => {
   return `workout-${timestamp}-${random}`;
 };
 
-/**
- * Crée un plan d'entraînement basique à partir d'une liste d'exercices
- * @param {Array} exercises - Liste des exercices
- * @returns {Object} - Plan d'entraînement généré
- */
-const createWorkoutFromExercises = (exercises) => {
-  // Regroupe les exercices en 3 sessions (équitablement répartis)
-  const sessions = [[], [], []];
-  exercises.forEach((ex, idx) => {
-    sessions[idx % 3].push(ex);
-  });
-
-  return {
-    id: generateWorkoutId(),
-    title: "Programme généré à partir des exercices",
-    description: "Plan d'entraînement basé sur la liste d'exercices fournie par l'API.",
-    totalSessions: 3,
-    level: "Beginner",
-    estimatedDuration: 50,
-    sessions: sessions.map((sessionExercises, i) => ({
-      id: `session_${i + 1}`,
-      sessionNumber: i + 1,
-      title: `Session ${i + 1}`,
-      type: "Mixed",
-      warmup: [],
-      mainWorkout: sessionExercises.map((ex, idx) => mapExercise(ex, idx, 'main')),
-      cooldown: []
-    }))
-  };
-};
 
 /**
  * Mock workout data for testing/development when API is not available

@@ -270,6 +270,37 @@ const generateWorkoutId = () => {
 };
 
 /**
+ * Crée un plan d'entraînement basique à partir d'une liste d'exercices
+ * @param {Array} exercises - Liste des exercices
+ * @returns {Object} - Plan d'entraînement généré
+ */
+const createWorkoutFromExercises = (exercises) => {
+  // Regroupe les exercices en 3 sessions (équitablement répartis)
+  const sessions = [[], [], []];
+  exercises.forEach((ex, idx) => {
+    sessions[idx % 3].push(ex);
+  });
+
+  return {
+    id: generateWorkoutId(),
+    title: "Programme généré à partir des exercices",
+    description: "Plan d'entraînement basé sur la liste d'exercices fournie par l'API.",
+    totalSessions: 3,
+    level: "Beginner",
+    estimatedDuration: 50,
+    sessions: sessions.map((sessionExercises, i) => ({
+      id: `session_${i + 1}`,
+      sessionNumber: i + 1,
+      title: `Session ${i + 1}`,
+      type: "Mixed",
+      warmup: [],
+      mainWorkout: sessionExercises.map((ex, idx) => mapExercise(ex, idx, 'main')),
+      cooldown: []
+    }))
+  };
+};
+
+/**
  * Mock workout data for testing/development when API is not available
  */
 export const getMockWorkoutPlan = () => {

@@ -1,21 +1,90 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="fr">
   <head>
     <meta charset="utf-8" />
-    <link rel="icon" href="%PUBLIC_URL%/favicon.ico" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link rel="icon" href="%PUBLIC_URL%/logo_run.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no" />
     <meta name="theme-color" content="#ff69b4" />
+    <meta name="msapplication-TileColor" content="#ff69b4" />
+    <meta name="msapplication-navbutton-color" content="#ff69b4" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    
+    <!-- SEO and Social Media Meta Tags -->
     <meta
       name="description"
-      content="ELLA Run - Personalized fitness journey with running and strength training programs designed exclusively for Ella"
+      content="ELLA Run - Application de fitness personnalisée avec plans d'entraînement course à pied et exercices au poids du corps. Suivi quotidien et progression adaptée."
     />
+    <meta name="keywords" content="fitness, course à pied, entraînement, poids du corps, application mobile, PWA, santé, sport" />
+    <meta name="author" content="ELLA Run Team" />
+    
+    <!-- Open Graph Meta Tags -->
+    <meta property="og:title" content="ELLA Run - Ton Parcours Fitness Personnalisé" />
+    <meta property="og:description" content="Application de fitness personnalisée avec plans d'entraînement course à pied et exercices au poids du corps" />
+    <meta property="og:type" content="website" />
+    <meta property="og:image" content="%PUBLIC_URL%/logo_run.svg" />
+    <meta property="og:url" content="https://yoursite.com" />
+    
+    <!-- Twitter Card Meta Tags -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="ELLA Run - Ton Parcours Fitness Personnalisé" />
+    <meta name="twitter:description" content="Application de fitness personnalisée avec plans d'entraînement course à pied et exercices au poids du corps" />
+    <meta name="twitter:image" content="%PUBLIC_URL%/logo_run.svg" />
+    
+    <!-- Apple Touch Icons -->
+    <link rel="apple-touch-icon" href="%PUBLIC_URL%/logo_run.svg" />
+    <link rel="apple-touch-icon" sizes="152x152" href="%PUBLIC_URL%/logo_run.svg" />
+    <link rel="apple-touch-icon" sizes="180x180" href="%PUBLIC_URL%/logo_run.svg" />
+    <link rel="apple-touch-icon" sizes="167x167" href="%PUBLIC_URL%/logo_run.svg" />
+    
+    <!-- Manifest -->
+    <link rel="manifest" href="%PUBLIC_URL%/manifest.json" />
+    
+    <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Preload critical resources -->
+    <link rel="preload" href="%PUBLIC_URL%/logo_run.svg" as="image" type="image/svg+xml">
+    
     <title>ELLA Run - Ton Parcours Fitness Personnalisé</title>
+    
+    <!-- PWA iOS Splash Screen -->
+    <meta name="apple-mobile-web-app-title" content="ELLA Run" />
+    <link rel="apple-touch-startup-image" href="%PUBLIC_URL%/logo_run.svg" />
   </head>
   <body>
-    <noscript>You need to enable JavaScript to run this app.</noscript>
+    <noscript>
+      <div style="text-align: center; padding: 50px; font-family: Arial, sans-serif;">
+        <h1 style="color: #ff69b4;">ELLA Run</h1>
+        <p>Vous devez activer JavaScript pour utiliser cette application.</p>
+        <p>You need to enable JavaScript to run this app.</p>
+      </div>
+    </noscript>
     <div id="root"></div>
+    
+    <!-- PWA Installation Script -->
+    <script>
+      // Basic PWA detection and setup
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', function() {
+          navigator.serviceWorker.register('/sw.js')
+            .then(function(registration) {
+              console.log('✅ PWA: Service Worker registered successfully');
+            }, function(err) {
+              console.log('❌ PWA: Service Worker registration failed');
+            });
+        });
+      }
+
+      // Add to homescreen prompt
+      let deferredPrompt;
+      window.addEventListener('beforeinstallprompt', (e) => {
+        e.preventDefault();
+        deferredPrompt = e;
+      });
+    </script>
   </body>
 </html>

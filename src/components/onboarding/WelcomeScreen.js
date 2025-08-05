@@ -279,9 +279,9 @@ const WelcomeScreen = () => {
         </WelcomeSubtitle>
 
         <WelcomeDescription>
-          Prête à transformer ta vie avec un programme fitness conçu spécialement pour toi ? 
+          Coucou ! je suis Vachou un bot spécialement créé pour toi. Prête à transformer ta vie avec un programme fitness conçu sur mesure? 
           En quelques minutes, nous allons créer ton plan d'entraînement personnalisé qui 
-          s'adapte parfaitement à tes objectifs, ton niveau et ton emploi du temps.
+          s'adapte parfaitement à tes objectifs, ton niveau et ton emploi du temps de queen.
         </WelcomeDescription>
 
         <FeaturesList>

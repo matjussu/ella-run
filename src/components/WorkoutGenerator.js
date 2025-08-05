@@ -185,11 +185,17 @@ const SessionCard = styled.div`
   overflow: hidden;
   transition: all 0.3s ease;
   cursor: pointer;
+  border: 3px solid transparent;
 
   &:hover {
     transform: translateY(-4px);
     box-shadow: ${props => props.theme.colors.shadowHover};
   }
+
+  ${props => props.isCompleted && `
+    background-color: #e8f5e9;
+    border-color: ${props.theme.colors.success};
+  `}
 `;
 
 const SessionHeader = styled.div`
@@ -246,11 +252,31 @@ const ExerciseList = styled.ul`
 
 const ExerciseListItem = styled.li`
   background: ${props => props.theme.colors.background.secondary};
-  padding: ${props => props.theme.spacing.sm};
+  padding: ${props => props.theme.spacing.md};
   margin-bottom: ${props => props.theme.spacing.xs};
   border-radius: ${props => props.theme.borderRadius.medium};
   color: ${props => props.theme.colors.text.primary};
   border-left: 3px solid ${props => props.theme.colors.primary};
+`;
+
+const ExerciseName = styled.div`
+  font-weight: ${props => props.theme.fonts.weights.semibold};
+  margin-bottom: ${props => props.theme.spacing.xs};
+`;
+
+const ExerciseDetails = styled.div`
+  display: flex;
+  gap: ${props => props.theme.spacing.sm};
+  flex-wrap: wrap;
+`;
+
+const DetailBadge = styled.span`
+  background: ${props => props.theme.colors.primary}20;
+  color: ${props => props.theme.colors.primary};
+  padding: ${props => props.theme.spacing.xs} ${props => props.theme.spacing.sm};
+  border-radius: ${props => props.theme.borderRadius.pill};
+  font-size: ${props => props.theme.fonts.sizes.xs};
+  font-weight: ${props => props.theme.fonts.weights.medium};
 `;
 
 const StartButton = styled.button`
@@ -312,17 +338,16 @@ const ActionButton = styled.button`
 const WorkoutGenerator = ({ onWorkoutGenerated, currentWorkout }) => {
   const { setIsLoading, handleError } = useAppContext();
   const [isGenerating, setIsGenerating] = useState(false);
-  const [savedWorkouts] = useState([]);
   const [isCompleting, setIsCompleting] = useState(false);
   const [isCompleted, setIsCompleted] = useState(false);
   const [hasCompletedToday, setHasCompletedToday] = useState(false);
   const [isValidating, setIsValidating] = useState(false);
-  const [todaysStats, setTodaysStats] = useState(null);
   const [profileData, setProfileData] = useState(null);
   const [expandedSession, setExpandedSession] = useState(null);
   const [playingSession, setPlayingSession] = useState(null);
+  const [completedSessions, setCompletedSessions] = useState([]);
 
-  // Load saved workouts and profile on component mount
+  // Load profile on component mount
   useEffect(() => {
     loadSavedWorkouts();
     loadTodaysStatus();
@@ -348,17 +373,14 @@ const WorkoutGenerator = ({ onWorkoutGenerated, currentWorkout }) => {
   }, []);
 
   /**
-   * Load today's workout status and stats
+   * Load today's workout status
    */
   const loadTodaysStatus = useCallback(async () => {
     try {
       const hasCompleted = await dailyWorkoutService.hasCompletedWorkoutToday();
-      const weeklyStats = await dailyWorkoutService.getWeeklyStats();
-      
       setHasCompletedToday(hasCompleted);
-      setTodaysStats(weeklyStats);
       
-      console.log('📊 Today\'s status loaded:', { hasCompleted, weeklyStats });
+      console.log('📊 Today\'s status loaded:', { hasCompleted });
     } catch (error) {
       console.error('Error loading today\'s status:', error);
       // Don't show error for this non-critical operation
@@ -503,6 +525,22 @@ const WorkoutGenerator = ({ onWorkoutGenerated, currentWorkout }) => {
   }, [currentWorkout, isCompleting, handleError, loadSavedWorkouts]);
 
   /**
+   * Mark a session as completed
+   */
+  const handleCompleteSession = useCallback(async (sessionId) => {
+    try {
+      // Add session to completed sessions
+      setCompletedSessions(prev => [...prev, sessionId]);
+      
+      console.log('✅ Session marked as completed:', sessionId);
+      
+    } catch (error) {
+      console.error('Error completing session:', error);
+      handleError(new Error('Failed to mark session as completed'));
+    }
+  }, [handleError]);
+
+  /**
    * Validate today's workout and record it in daily progress
    */
   const handleValidateDailyWorkout = useCallback(async () => {
@@ -517,7 +555,7 @@ const WorkoutGenerator = ({ onWorkoutGenerated, currentWorkout }) => {
       // Update today's status
       setHasCompletedToday(true);
       
-      // Refresh stats
+      // Refresh status
       await loadTodaysStatus();
       
       console.log('🎉 Daily workout validated and recorded!');
@@ -577,9 +615,9 @@ const WorkoutGenerator = ({ onWorkoutGenerated, currentWorkout }) => {
   }, [getSessionExerciseCount]);
 
   /**
-   * Render simple exercise list for collapsed session view
+   * Render detailed exercise list for expanded session view
    */
-  const renderSimpleExerciseList = (session) => {
+  const renderDetailedExerciseList = (session) => {
     const allExercises = [
       ...(session.warmup || []),
       ...(session.mainWorkout || []),
@@ -590,7 +628,18 @@ const WorkoutGenerator = ({ onWorkoutGenerated, currentWorkout }) => {
       <ExerciseList>
         {allExercises.slice(0, 4).map((exercise, index) => (
           <ExerciseListItem key={index}>
-            {exercise.name}
+            <ExerciseName>{exercise.name}</ExerciseName>
+            <ExerciseDetails>
+              {exercise.sets && (
+                <DetailBadge>📊 {exercise.sets} séries</DetailBadge>
+              )}
+              {exercise.reps && (
+                <DetailBadge>🔄 {exercise.reps} reps</DetailBadge>
+              )}
+              {exercise.duration && (
+                <DetailBadge>⏱️ {exercise.duration} min</DetailBadge>
+              )}
+            </ExerciseDetails>
           </ExerciseListItem>
         ))}
         {allExercises.length > 4 && (
@@ -616,36 +665,6 @@ const WorkoutGenerator = ({ onWorkoutGenerated, currentWorkout }) => {
         </Subtitle>
       </GeneratorHeader>
 
-      {/* Daily Status Section */}
-      {todaysStats && (
-        <GenerateSection>
-          <h3 style={{ textAlign: 'center', marginBottom: '1.5rem', color: '#ff69b4' }}>
-            📊 Votre progression aujourd'hui
-          </h3>
-          <WorkoutInfo>
-            <InfoCard>
-              <InfoIcon>{hasCompletedToday ? '✅' : '⭕'}</InfoIcon>
-              <InfoTitle>Aujourd'hui</InfoTitle>
-              <InfoValue>{hasCompletedToday ? 'Terminé' : 'À faire'}</InfoValue>
-            </InfoCard>
-            <InfoCard>
-              <InfoIcon>🔥</InfoIcon>
-              <InfoTitle>Série</InfoTitle>
-              <InfoValue>{todaysStats.streak} jours</InfoValue>
-            </InfoCard>
-            <InfoCard>
-              <InfoIcon>📈</InfoIcon>
-              <InfoTitle>Cette semaine</InfoTitle>
-              <InfoValue>{todaysStats.totalWorkouts}/7 jours</InfoValue>
-            </InfoCard>
-            <InfoCard>
-              <InfoIcon>⏱️</InfoIcon>
-              <InfoTitle>Temps total</InfoTitle>
-              <InfoValue>{todaysStats.totalDuration} min</InfoValue>
-            </InfoCard>
-          </WorkoutInfo>
-        </GenerateSection>
-      )}
 
       {/* Generation Section */}
       <GenerateSection>
@@ -715,9 +734,14 @@ const WorkoutGenerator = ({ onWorkoutGenerated, currentWorkout }) => {
               const isExpanded = expandedSession === session.id;
               const exerciseCount = getSessionExerciseCount(session);
               const duration = getSessionDuration(session);
+              const isCompleted = completedSessions.includes(session.id);
               
               return (
-                <SessionCard key={session.id} onClick={() => handleSessionClick(session.id)}>
+                <SessionCard 
+                  key={session.id} 
+                  onClick={() => handleSessionClick(session.id)}
+                  isCompleted={isCompleted}
+                >
                   <SessionHeader>
                     <div>
                       <SessionTitle>{session.title}</SessionTitle>
@@ -725,15 +749,28 @@ const WorkoutGenerator = ({ onWorkoutGenerated, currentWorkout }) => {
                     <SessionStats>
                       <span>💪 {exerciseCount} Exercices</span>
                       <span>⏱️ {duration} min</span>
-                      <SessionStatus $completed={false}>À faire</SessionStatus>
+                      <SessionStatus $completed={isCompleted}>
+                        {isCompleted ? '✅ Terminé' : 'À faire'}
+                      </SessionStatus>
                     </SessionStats>
                   </SessionHeader>
                   
                   <SessionContent $expanded={isExpanded}>
-                    {renderSimpleExerciseList(session)}
+                    {renderDetailedExerciseList(session)}
                     <StartButton onClick={(e) => handleStartSession(session, e)}>
                       🚀 Commencer la séance
                     </StartButton>
+                    {!isCompleted && (
+                      <StartButton 
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleCompleteSession(session.id);
+                        }}
+                        style={{ marginTop: '8px', background: '#4caf50' }}
+                      >
+                        ✅ Marquer comme terminé
+                      </StartButton>
+                    )}
                   </SessionContent>
                 </SessionCard>
               );

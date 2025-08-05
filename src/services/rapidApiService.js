@@ -36,26 +36,80 @@ const validateEnvironmentVariables = () => {
 /**
  * Génère un plan d'entraînement personnalisé en utilisant l'API AI Workout Planner de RapidAPI
  * Fonction basée sur la documentation officielle de l'API
+ * @param {Object} profileData - Données du profil utilisateur (optionnel)
  */
-export const generateWorkoutPlan = async () => {
+export const generateWorkoutPlan = async (profileData = null) => {
   try {
     // Validation des variables d'environnement
     validateEnvironmentVariables();
 
     console.log('🔥 Appel à l\'API AI Workout Planner...');
+    console.log('👤 Profile data provided:', profileData);
+
+    // Mapper les données du profil vers les paramètres de l'API
+    const getGoalsFromProfile = (goals) => {
+      const goalMapping = {
+        'weight_loss': 'Lose weight',
+        'muscle_gain': 'Build muscle', 
+        'endurance': 'Build endurance',
+        'strength': 'Build strength',
+        'flexibility': 'Improve flexibility',
+        'general_fitness': 'General fitness'
+      };
+      return goals?.map(g => goalMapping[g] || g).join(' and ') || "Build endurance and strength";
+    };
+
+    const getFitnessLevel = (level) => {
+      const levelMapping = {
+        'débutante': 'Beginner',
+        'intermédiaire': 'Intermediate', 
+        'avancée': 'Advanced'
+      };
+      return levelMapping[level] || 'Beginner';
+    };
+
+    const getEquipmentList = (equipment) => {
+      const equipmentMapping = {
+        'none': 'No equipment needed',
+        'dumbbells': 'Dumbbells',
+        'resistance_bands': 'Resistance bands',
+        'kettlebells': 'Kettlebells',
+        'barbell': 'Barbell',
+        'pull_up_bar': 'Pull-up bar',
+        'yoga_mat': 'Yoga mat',
+        'bench': 'Bench',
+        'cardio_machine': 'Cardio equipment'
+      };
+      return equipment?.map(eq => equipmentMapping[eq] || eq) || ['No equipment needed'];
+    };
+
+    const getWorkoutTypes = (preferences) => {
+      const typeMapping = {
+        'hiit': 'HIIT',
+        'strength_training': 'Strength training',
+        'cardio': 'Cardio',
+        'yoga': 'Yoga',
+        'pilates': 'Pilates',
+        'bodyweight': 'Bodyweight exercises',
+        'stretching': 'Stretching',
+        'functional': 'Functional training',
+        'dance': 'Dance fitness'
+      };
+      return preferences?.map(p => typeMapping[p] || p) || ['Running', 'Bodyweight exercises'];
+    };
 
     // Corps de la requête selon la documentation officielle
-    // Spécialisé pour course à pied et exercices au poids du corps uniquement
+    // Utilise les données du profil si disponibles, sinon des valeurs par défaut
     const requestBody = {
-      goal: "Build endurance and strength",
-      fitness_level: "Beginner",
-      preferences: ["Running", "Bodyweight exercises", "Cardio"],
+      goal: profileData ? getGoalsFromProfile(profileData.goals) : "Build endurance and strength",
+      fitness_level: profileData ? getFitnessLevel(profileData.level) : "Beginner",
+      preferences: profileData ? [...getWorkoutTypes(profileData.preferences), "Cardio"] : ["Running", "Bodyweight exercises", "Cardio"],
       health_conditions: ["None"],
-      equipment_available: ["None", "No equipment needed"],
-      exercise_types: ["Running", "Bodyweight", "Calisthenics"],
+      equipment_available: profileData ? getEquipmentList(profileData.equipment) : ["No equipment needed"],
+      exercise_types: profileData ? getWorkoutTypes(profileData.preferences) : ["Running", "Bodyweight", "Calisthenics"],
       schedule: {
-        days_per_week: 3,
-        session_duration: 45
+        days_per_week: profileData?.sessionsPerWeek || 3,
+        session_duration: profileData?.sessionDuration || 45
       },
       plan_duration_weeks: 4,
       lang: "fr"

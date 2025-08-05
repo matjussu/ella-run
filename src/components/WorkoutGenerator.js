@@ -11,6 +11,7 @@ import styled from 'styled-components';
 import { generateWorkoutPlan, getMockWorkoutPlan } from '../services/rapidApiService';
 import { workoutSessionService } from '../services/firebaseService';
 import { dailyWorkoutService } from '../services/dailyWorkoutService';
+import userProfileService from '../services/userProfileService';
 import { useAppContext } from '../App';
 import LoadingSpinner from './LoadingSpinner';
 
@@ -556,11 +557,13 @@ const WorkoutGenerator = ({ onWorkoutGenerated, onExerciseSelect, currentWorkout
   const [hasCompletedToday, setHasCompletedToday] = useState(false);
   const [isValidating, setIsValidating] = useState(false);
   const [todaysStats, setTodaysStats] = useState(null);
+  const [profileData, setProfileData] = useState(null);
 
-  // Load saved workouts on component mount
+  // Load saved workouts and profile on component mount
   useEffect(() => {
     loadSavedWorkouts();
     loadTodaysStatus();
+    loadProfileData();
   }, []);
 
   // Reset completion status when workout changes
@@ -600,6 +603,44 @@ const WorkoutGenerator = ({ onWorkoutGenerated, onExerciseSelect, currentWorkout
   }, []);
 
   /**
+   * Load user profile data for workout generation
+   */
+  const loadProfileData = useCallback(async () => {
+    try {
+      // Try to get profile by ID first (from onboarding)
+      let result = await userProfileService.getUserProfile('ella-default');
+      
+      if (!result.success) {
+        // Fallback to getting by name
+        result = await userProfileService.getUserProfileByName('Ella');
+      }
+      
+      if (result.success && result.profile) {
+        const profile = result.profile;
+        
+        // Map profile structure to workout generation format
+        const workoutProfile = {
+          goals: profile.fitnessProfile?.goals || profile.goals || [],
+          level: profile.fitnessProfile?.level || profile.level || 'débutante',
+          equipment: profile.equipment || [],
+          preferences: profile.fitnessProfile?.preferredWorkoutTypes || profile.preferences?.workoutPreferences || profile.preferences || [],
+          sessionsPerWeek: profile.schedule?.sessionsPerWeek || profile.sessionsPerWeek || 3,
+          sessionDuration: profile.schedule?.sessionDuration || profile.sessionDuration || 45,
+          availableDays: profile.schedule?.availableDays || profile.availableDays || []
+        };
+        
+        setProfileData(workoutProfile);
+        console.log('👤 Profile data loaded for workout generation:', workoutProfile);
+      } else {
+        console.log('📭 No profile found, using default settings');
+      }
+    } catch (error) {
+      console.error('Error loading profile data:', error);
+      // Don't show error for this non-critical operation
+    }
+  }, []);
+
+  /**
    * Generate new workout plan
    */
   const handleGenerateWorkout = useCallback(async () => {
@@ -607,16 +648,17 @@ const WorkoutGenerator = ({ onWorkoutGenerated, onExerciseSelect, currentWorkout
     
     try {
       console.log('🎯 Génération d\'un nouveau plan d\'entraînement...');
+      console.log('👤 Using profile data:', profileData);
       
-      // Try to generate workout using RapidAPI first
-      let workoutResult = await generateWorkoutPlan();
+      // Try to generate workout using RapidAPI first with profile data
+      let workoutResult = await generateWorkoutPlan(profileData);
       
       // If RapidAPI fails, use Ella service as fallback
       if (!workoutResult.success) {
         console.log('⚠️ RapidAPI failed, using Ella service fallback...');
         try {
           const { generateEllaWorkout } = await import('../services/ellaWorkoutService');
-          workoutResult = await generateEllaWorkout();
+          workoutResult = await generateEllaWorkout(profileData);
           console.log('✅ Fallback to Ella service successful');
         } catch (ellaError) {
           console.warn('⚠️ Ella service also failed, using mock data:', ellaError);
@@ -647,7 +689,7 @@ const WorkoutGenerator = ({ onWorkoutGenerated, onExerciseSelect, currentWorkout
     } finally {
       setIsGenerating(false);
     }
-  }, [onWorkoutGenerated, handleError, loadSavedWorkouts]);
+  }, [profileData, onWorkoutGenerated, handleError, loadSavedWorkouts]);
 
   /**
    * Handle exercise click
@@ -840,8 +882,11 @@ const WorkoutGenerator = ({ onWorkoutGenerated, onExerciseSelect, currentWorkout
       <GeneratorHeader>
         <Title>Générez votre entraînement parfait</Title>
         <Subtitle>
-          Obtenez un plan d'entraînement personnalisé pour débutant, combinant course à pied et musculation,
-          conçu pour 3 séances par semaine afin de développer votre forme progressivement et efficacement.
+          {profileData ? (
+            `Plan personnalisé pour ${profileData.level} • ${profileData.goals?.join(' + ') || 'Fitness général'} • ${profileData.sessionsPerWeek}x par semaine • ${profileData.sessionDuration} min par séance`
+          ) : (
+            'Obtenez un plan d\'entraînement personnalisé basé sur vos objectifs, niveau et équipement disponible.'
+          )}
         </Subtitle>
       </GeneratorHeader>
 
@@ -881,23 +926,23 @@ const WorkoutGenerator = ({ onWorkoutGenerated, onExerciseSelect, currentWorkout
         <WorkoutInfo>
           <InfoCard>
             <InfoIcon>🎯</InfoIcon>
-            <InfoTitle>Focus</InfoTitle>
-            <InfoValue>Course + Poids du Corps</InfoValue>
+            <InfoTitle>Objectifs</InfoTitle>
+            <InfoValue>{profileData?.goals?.length ? profileData.goals.join(', ') : 'Fitness général'}</InfoValue>
           </InfoCard>
           <InfoCard>
             <InfoIcon>🏃‍♀️</InfoIcon>
-            <InfoTitle>Types</InfoTitle>
-            <InfoValue>Running + Bodyweight</InfoValue>
+            <InfoTitle>Niveau</InfoTitle>
+            <InfoValue>{profileData?.level || 'Débutante'}</InfoValue>
           </InfoCard>
           <InfoCard>
             <InfoIcon>📅</InfoIcon>
             <InfoTitle>Fréquence</InfoTitle>
-            <InfoValue>3x par semaine</InfoValue>
+            <InfoValue>{profileData?.sessionsPerWeek || 3}x par semaine</InfoValue>
           </InfoCard>
           <InfoCard>
             <InfoIcon>⏰</InfoIcon>
             <InfoTitle>Durée</InfoTitle>
-            <InfoValue>45 minutes</InfoValue>
+            <InfoValue>{profileData?.sessionDuration || 45} minutes</InfoValue>
           </InfoCard>
         </WorkoutInfo>
 

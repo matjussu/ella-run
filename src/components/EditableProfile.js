@@ -297,14 +297,40 @@ const EditableProfile = () => {
   const loadProfile = async () => {
     try {
       setLoading(true);
-      const savedProfile = await userProfileService.getUserProfileByName('Ella');
       
-      console.log('📁 Saved profile from database:', savedProfile);
-      console.log('📁 Default profile:', DEFAULT_PROFILE);
+      // Try to get profile by ID first (from onboarding)
+      let result = await userProfileService.getUserProfile('ella-default');
       
-      if (savedProfile) {
-        const mergedProfile = ensureProfileArrays({ ...DEFAULT_PROFILE, ...savedProfile });
-        console.log('📁 Merged profile:', mergedProfile);
+      if (!result.success) {
+        // Fallback to getting by name
+        result = await userProfileService.getUserProfileByName('Ella');
+      }
+      
+      console.log('📁 Profile result from database:', result);
+      
+      if (result.success && result.profile) {
+        // Ensure all arrays are properly initialized
+        const profileData = result.profile;
+        const mergedProfile = ensureProfileArrays({
+          ...DEFAULT_PROFILE,
+          ...profileData,
+          // Map onboarding structure to profile structure
+          goals: profileData.fitnessProfile?.goals || profileData.goals || [],
+          targetAreas: profileData.fitnessProfile?.targetAreas || profileData.targetAreas || [],
+          preferences: profileData.fitnessProfile?.preferredWorkoutTypes || profileData.preferences?.workoutPreferences || profileData.preferences || [],
+          equipment: profileData.equipment || [],
+          availableDays: profileData.schedule?.availableDays || [],
+          sessionsPerWeek: profileData.schedule?.sessionsPerWeek || 3,
+          sessionDuration: profileData.schedule?.sessionDuration || 60,
+          // Personal info
+          name: profileData.personalInfo?.name || 'Ella',
+          age: profileData.personalInfo?.age || 25,
+          height: profileData.personalInfo?.height || 170,
+          weight: profileData.personalInfo?.weight || 63,
+          level: profileData.fitnessProfile?.level || 'débutante'
+        });
+        
+        console.log('📁 Merged profile with onboarding data:', mergedProfile);
         setProfile(mergedProfile);
       } else {
         console.log('📁 Using default profile');

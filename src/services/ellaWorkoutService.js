@@ -700,9 +700,25 @@ const getStrengthPlan = (phase) => {
 };
 
 // Generate Ella's personalized workout
-export const generateEllaWorkout = async () => {
+export const generateEllaWorkout = async (profileData = null) => {
   const currentPhase = getCurrentPhase();
-  const workoutType = Math.random() > 0.5 ? 'running' : 'strength'; // Alternate between types
+  
+  // Determine workout type based on profile preferences or alternate randomly
+  let workoutType = 'running'; // default
+  if (profileData?.preferences?.length) {
+    const hasCardio = profileData.preferences.some(p => ['cardio', 'hiit', 'running'].includes(p));
+    const hasStrength = profileData.preferences.some(p => ['strength_training', 'bodyweight', 'functional'].includes(p));
+    
+    if (hasCardio && hasStrength) {
+      workoutType = Math.random() > 0.5 ? 'running' : 'strength';
+    } else if (hasCardio) {
+      workoutType = 'running';
+    } else if (hasStrength) {
+      workoutType = 'strength';
+    }
+  } else {
+    workoutType = Math.random() > 0.5 ? 'running' : 'strength'; // Alternate between types
+  }
   
   let workout;
   if (workoutType === 'running') {

@@ -6,7 +6,7 @@
  */
 
 import { db } from '../config/firebase';
-import { doc, setDoc, getDoc, updateDoc, collection, query, where, getDocs } from 'firebase/firestore';
+import { doc, setDoc, getDoc, updateDoc, collection, query, where, getDocs, arrayUnion, increment } from 'firebase/firestore';
 
 // Default profile structure
 const DEFAULT_PROFILE = {
@@ -34,6 +34,10 @@ const DEFAULT_PROFILE = {
     units: 'metric',
     notifications: true
   },
+  // Progress tracking for the 4-week program
+  currentWeek: 1,
+  completedSessionsThisWeek: [],
+  totalWorkoutsCompleted: 0,
   onboardingCompleted: false,
   createdAt: new Date().toISOString(),
   lastUpdated: new Date().toISOString()
@@ -386,6 +390,68 @@ export const validateProfileData = (profileData) => {
   return { isValid, errors };
 };
 
+/**
+ * Validate a workout session and update user progress
+ */
+export const validateSession = async (profileId, sessionId, weekNumber) => {
+  try {
+    const docRef = doc(db, 'userProfiles', profileId);
+    
+    // First update: increment total workouts and add session to completed array
+    await updateDoc(docRef, {
+      totalWorkoutsCompleted: increment(1),
+      completedSessionsThisWeek: arrayUnion(sessionId),
+      lastUpdated: new Date().toISOString()
+    });
+
+    // Re-fetch the updated document to check if week is complete
+    const updatedDoc = await getDoc(docRef);
+    if (!updatedDoc.exists()) {
+      throw new Error('Profile not found after update');
+    }
+
+    const updatedProfile = updatedDoc.data();
+    const completedSessions = updatedProfile.completedSessionsThisWeek || [];
+
+    // Check if week is complete (3 sessions)
+    if (completedSessions.length >= 3) {
+      // Week is complete, move to next week
+      await updateDoc(docRef, {
+        currentWeek: increment(1),
+        completedSessionsThisWeek: [], // Reset for next week
+        lastUpdated: new Date().toISOString()
+      });
+
+      console.log(`✅ Week ${weekNumber} completed! Moving to week ${weekNumber + 1}`);
+      
+      // Return updated profile with new week
+      const finalDoc = await getDoc(docRef);
+      return {
+        success: true,
+        profile: finalDoc.data(),
+        weekCompleted: true,
+        newWeek: weekNumber + 1
+      };
+    }
+
+    console.log(`✅ Session ${sessionId} validated for week ${weekNumber}`);
+    
+    return {
+      success: true,
+      profile: updatedProfile,
+      weekCompleted: false,
+      sessionsCompletedThisWeek: completedSessions.length
+    };
+
+  } catch (error) {
+    console.error('❌ Error validating session:', error);
+    return {
+      success: false,
+      error: error.message
+    };
+  }
+};
+
 export default {
   createUserProfile,
   getUserProfile,
@@ -395,5 +461,6 @@ export default {
   completeOnboarding,
   getPersonalizedRecommendations,
   calculateCaloriesBurned,
-  validateProfileData
+  validateProfileData,
+  validateSession
 };

@@ -1,16 +1,14 @@
 /**
  * Workout Generator Component
  * 
- * Main component for generating and displaying workout plans.
- * Integrates with RapidAPI for workout generation and Firebase for saving sessions.
+ * Displays the current week's 3 sessions from the static 4-week program.
+ * Tracks user progress through Firebase and handles session validation.
  * Features a modern, responsive UI with pink/white theme.
  */
 
 import React, { useState, useCallback, useEffect } from 'react';
 import styled from 'styled-components';
-import { generateWorkoutPlan, getMockWorkoutPlan } from '../services/rapidApiService';
-import { workoutSessionService } from '../services/firebaseService';
-import { dailyWorkoutService } from '../services/dailyWorkoutService';
+import { WORKOUT_PROGRAM } from '../workouts/program';
 import userProfileService from '../services/userProfileService';
 import { useAppContext } from '../App';
 import LoadingSpinner from './LoadingSpinner';
@@ -46,7 +44,7 @@ const Subtitle = styled.p`
   line-height: 1.6;
 `;
 
-const GenerateSection = styled.div`
+const ProgressSection = styled.div`
   background: ${props => props.theme.colors.secondary};
   padding: ${props => props.theme.spacing.xl};
   border-radius: ${props => props.theme.borderRadius.large};
@@ -55,118 +53,43 @@ const GenerateSection = styled.div`
   text-align: center;
 `;
 
-const WorkoutInfo = styled.div`
+const ProgressInfo = styled.div`
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
   gap: ${props => props.theme.spacing.md};
-  margin-bottom: ${props => props.theme.spacing.xl};
+  margin-bottom: ${props => props.theme.spacing.lg};
 `;
 
-const InfoCard = styled.div`
+const ProgressCard = styled.div`
   background: ${props => props.theme.colors.background.secondary};
   padding: ${props => props.theme.spacing.lg};
   border-radius: ${props => props.theme.borderRadius.medium};
   text-align: center;
 `;
 
-const InfoIcon = styled.div`
+const ProgressIcon = styled.div`
   font-size: 2rem;
   margin-bottom: ${props => props.theme.spacing.sm};
 `;
 
-const InfoTitle = styled.h3`
+const ProgressTitle = styled.h3`
   color: ${props => props.theme.colors.primary};
   font-size: ${props => props.theme.fonts.sizes.md};
   font-weight: ${props => props.theme.fonts.weights.semibold};
   margin-bottom: ${props => props.theme.spacing.xs};
 `;
 
-const InfoValue = styled.p`
+const ProgressValue = styled.p`
   color: ${props => props.theme.colors.text.primary};
   font-size: ${props => props.theme.fonts.sizes.lg};
   font-weight: ${props => props.theme.fonts.weights.medium};
 `;
 
-const GenerateButton = styled.button`
-  background: linear-gradient(135deg, ${props => props.theme.colors.primary} 0%, ${props => props.theme.colors.primaryDark} 100%);
-  color: white;
-  border: none;
-  padding: ${props => props.theme.spacing.lg} ${props => props.theme.spacing.xxl};
-  border-radius: ${props => props.theme.borderRadius.pill};
-  font-size: ${props => props.theme.fonts.sizes.lg};
-  font-weight: ${props => props.theme.fonts.weights.semibold};
-  cursor: pointer;
-  transition: all 0.3s ease;
-  position: relative;
-  overflow: hidden;
-
-  &:hover:not(:disabled) {
-    transform: translateY(-3px);
-    box-shadow: ${props => props.theme.colors.shadowHover};
-  }
-
-  &:active:not(:disabled) {
-    transform: translateY(-1px);
-  }
-
-  &:disabled {
-    opacity: 0.7;
-    cursor: not-allowed;
-  }
-
-  @media (max-width: ${props => props.theme.breakpoints.mobile}) {
-    padding: ${props => props.theme.spacing.md} ${props => props.theme.spacing.xl};
-    font-size: ${props => props.theme.fonts.sizes.md};
-  }
-`;
-
-const WorkoutDisplay = styled.div`
-  margin-top: ${props => props.theme.spacing.xl};
-`;
-
-const WorkoutHeader = styled.div`
-  background: ${props => props.theme.colors.secondary};
-  padding: ${props => props.theme.spacing.xl};
-  border-radius: ${props => props.theme.borderRadius.large};
-  box-shadow: ${props => props.theme.colors.shadow};
-  margin-bottom: ${props => props.theme.spacing.lg};
-  text-align: center;
-`;
-
-const WorkoutTitle = styled.h2`
+const WeekTitle = styled.h2`
   color: ${props => props.theme.colors.primary};
   font-size: ${props => props.theme.fonts.sizes.xxl};
   font-weight: ${props => props.theme.fonts.weights.bold};
-  margin-bottom: ${props => props.theme.spacing.sm};
-`;
-
-const WorkoutDescription = styled.p`
-  color: ${props => props.theme.colors.text.secondary};
-  font-size: ${props => props.theme.fonts.sizes.md};
-  margin-bottom: ${props => props.theme.spacing.lg};
-`;
-
-const WorkoutStats = styled.div`
-  display: flex;
-  justify-content: center;
-  gap: ${props => props.theme.spacing.xl};
-  flex-wrap: wrap;
-`;
-
-const StatItem = styled.div`
-  text-align: center;
-
-  strong {
-    display: block;
-    color: ${props => props.theme.colors.primary};
-    font-size: ${props => props.theme.fonts.sizes.lg};
-    font-weight: ${props => props.theme.fonts.weights.bold};
-  }
-
-  span {
-    color: ${props => props.theme.colors.text.secondary};
-    font-size: ${props => props.theme.fonts.sizes.sm};
-  }
+  margin-bottom: ${props => props.theme.spacing.md};
 `;
 
 const SessionsGrid = styled.div`
@@ -209,25 +132,19 @@ const SessionHeader = styled.div`
   gap: ${props => props.theme.spacing.sm};
 `;
 
-const SessionStats = styled.div`
-  display: flex;
-  gap: ${props => props.theme.spacing.md};
-  align-items: center;
-  font-size: ${props => props.theme.fonts.sizes.sm};
-  opacity: 0.9;
-  
-  @media (max-width: ${props => props.theme.breakpoints.mobile}) {
-    width: 100%;
-    justify-content: center;
-    margin-top: ${props => props.theme.spacing.xs};
-  }
+const SessionTitleContainer = styled.div`
+  flex: 1;
 `;
 
 const SessionTitle = styled.h3`
   font-size: ${props => props.theme.fonts.sizes.xl};
   font-weight: ${props => props.theme.fonts.weights.bold};
-  margin: 0;
-  flex: 1;
+  margin: 0 0 ${props => props.theme.spacing.xs} 0;
+`;
+
+const SessionDay = styled.div`
+  font-size: ${props => props.theme.fonts.sizes.sm};
+  opacity: 0.9;
 `;
 
 const SessionStatus = styled.div`
@@ -279,119 +196,95 @@ const DetailBadge = styled.span`
   font-weight: ${props => props.theme.fonts.weights.medium};
 `;
 
-const StartButton = styled.button`
-  background: linear-gradient(135deg, ${props => props.theme.colors.primary} 0%, ${props => props.theme.colors.primaryDark} 100%);
-  color: white;
-  border: none;
-  padding: ${props => props.theme.spacing.md} ${props => props.theme.spacing.xl};
-  border-radius: ${props => props.theme.borderRadius.pill};
-  font-size: ${props => props.theme.fonts.sizes.md};
-  font-weight: ${props => props.theme.fonts.weights.semibold};
-  cursor: pointer;
-  transition: all 0.3s ease;
-  width: 100%;
-  
-  &:hover {
-    transform: translateY(-2px);
-    box-shadow: ${props => props.theme.colors.shadowHover};
-  }
-  
-  &:active {
-    transform: translateY(0);
-  }
+const ExerciseDescription = styled.div`
+  color: ${props => props.theme.colors.text.secondary};
+  font-size: ${props => props.theme.fonts.sizes.sm};
+  margin-top: ${props => props.theme.spacing.xs};
+  font-style: italic;
 `;
-
 
 const ActionButtons = styled.div`
   display: flex;
-  gap: ${props => props.theme.spacing.md};
-  justify-content: center;
-  margin-top: ${props => props.theme.spacing.xl};
+  gap: ${props => props.theme.spacing.sm};
+  margin-top: ${props => props.theme.spacing.lg};
 `;
 
 const ActionButton = styled.button`
-  background: ${props => props.$primary ? props.theme.colors.primary : 'transparent'};
-  color: ${props => props.$primary ? 'white' : props.theme.colors.primary};
-  border: 2px solid ${props => props.theme.colors.primary};
+  flex: 1;
+  background: ${props => props.$primary ? 
+    `linear-gradient(135deg, ${props.theme.colors.primary} 0%, ${props.theme.colors.primaryDark} 100%)` : 
+    props.$success ? '#4caf50' : 'transparent'};
+  color: ${props => props.$primary || props.$success ? 'white' : props.theme.colors.primary};
+  border: 2px solid ${props => props.$success ? '#4caf50' : props.theme.colors.primary};
   padding: ${props => props.theme.spacing.md} ${props => props.theme.spacing.lg};
   border-radius: ${props => props.theme.borderRadius.pill};
   font-weight: ${props => props.theme.fonts.weights.medium};
   cursor: pointer;
   transition: all 0.3s ease;
 
-  &:hover {
-    background: ${props => props.theme.colors.primary};
+  &:hover:not(:disabled) {
+    background: ${props => props.$success ? '#45a049' : props.theme.colors.primary};
     color: white;
     transform: translateY(-2px);
     box-shadow: ${props => props.theme.colors.shadowHover};
   }
 
-  &:active {
+  &:active:not(:disabled) {
     transform: translateY(0);
+  }
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    transform: none;
   }
 `;
 
+const CompletionMessage = styled.div`
+  background: ${props => props.theme.colors.success}10;
+  border: 2px solid ${props => props.theme.colors.success};
+  border-radius: ${props => props.theme.borderRadius.large};
+  padding: ${props => props.theme.spacing.xl};
+  text-align: center;
+  margin: ${props => props.theme.spacing.xl} 0;
+`;
+
+const CompletionTitle = styled.h2`
+  color: ${props => props.theme.colors.success};
+  font-size: ${props => props.theme.fonts.sizes.xxl};
+  font-weight: ${props => props.theme.fonts.weights.bold};
+  margin-bottom: ${props => props.theme.spacing.md};
+`;
+
+const CompletionText = styled.p`
+  color: ${props => props.theme.colors.text.primary};
+  font-size: ${props => props.theme.fonts.sizes.lg};
+  margin-bottom: ${props => props.theme.spacing.lg};
+`;
 
 /**
  * WorkoutGenerator Component
  */
-const WorkoutGenerator = ({ onWorkoutGenerated, currentWorkout }) => {
-  const { setIsLoading, handleError } = useAppContext();
-  const [isGenerating, setIsGenerating] = useState(false);
-  const [isCompleting, setIsCompleting] = useState(false);
-  const [isCompleted, setIsCompleted] = useState(false);
-  const [hasCompletedToday, setHasCompletedToday] = useState(false);
-  const [isValidating, setIsValidating] = useState(false);
-  const [profileData, setProfileData] = useState(null);
+const WorkoutGenerator = () => {
+  const { handleError } = useAppContext();
+  const [userProfile, setUserProfile] = useState(null);
   const [expandedSession, setExpandedSession] = useState(null);
   const [playingSession, setPlayingSession] = useState(null);
-  const [completedSessions, setCompletedSessions] = useState([]);
+  const [validatingSession, setValidatingSession] = useState(null);
+  const [isLoadingProfile, setIsLoadingProfile] = useState(true);
 
-  // Load profile on component mount
+  // Load user profile on component mount
   useEffect(() => {
-    loadSavedWorkouts();
-    loadTodaysStatus();
-    loadProfileData();
-  }, []);
-
-  // Reset completion status when workout changes
-  useEffect(() => {
-    setIsCompleted(false);
-  }, [currentWorkout]);
-
-  /**
-   * Load previously saved workout sessions
-   */
-  const loadSavedWorkouts = useCallback(async () => {
-    try {
-      await workoutSessionService.getAllWorkoutSessions();
-      // savedWorkouts state removed for accordion refactor
-    } catch (error) {
-      console.error('Error loading saved workouts:', error);
-      // Don't show error for this non-critical operation
-    }
+    loadUserProfile();
   }, []);
 
   /**
-   * Load today's workout status
+   * Load user profile with progress data
    */
-  const loadTodaysStatus = useCallback(async () => {
+  const loadUserProfile = useCallback(async () => {
     try {
-      const hasCompleted = await dailyWorkoutService.hasCompletedWorkoutToday();
-      setHasCompletedToday(hasCompleted);
+      setIsLoadingProfile(true);
       
-      console.log('📊 Today\'s status loaded:', { hasCompleted });
-    } catch (error) {
-      console.error('Error loading today\'s status:', error);
-      // Don't show error for this non-critical operation
-    }
-  }, []);
-
-  /**
-   * Load user profile data for workout generation
-   */
-  const loadProfileData = useCallback(async () => {
-    try {
       // Try to get profile by ID first (from onboarding)
       let result = await userProfileService.getUserProfile('ella-default');
       
@@ -401,172 +294,26 @@ const WorkoutGenerator = ({ onWorkoutGenerated, currentWorkout }) => {
       }
       
       if (result.success && result.profile) {
-        const profile = result.profile;
-        
-        // Map profile structure to workout generation format
-        const workoutProfile = {
-          goals: profile.fitnessProfile?.goals || profile.goals || [],
-          level: profile.fitnessProfile?.level || profile.level || 'débutante',
-          equipment: profile.equipment || [],
-          preferences: profile.fitnessProfile?.preferredWorkoutTypes || profile.preferences?.workoutPreferences || profile.preferences || [],
-          sessionsPerWeek: profile.schedule?.sessionsPerWeek || profile.sessionsPerWeek || 3,
-          sessionDuration: profile.schedule?.sessionDuration || profile.sessionDuration || 45,
-          availableDays: profile.schedule?.availableDays || profile.availableDays || []
-        };
-        
-        setProfileData(workoutProfile);
-        console.log('👤 Profile data loaded for workout generation:', workoutProfile);
+        setUserProfile(result.profile);
+        console.log('👤 User profile loaded:', result.profile);
       } else {
-        console.log('📭 No profile found, using default settings');
-      }
-    } catch (error) {
-      console.error('Error loading profile data:', error);
-      // Don't show error for this non-critical operation
-    }
-  }, []);
-
-  /**
-   * Generate new workout plan
-   */
-  const handleGenerateWorkout = useCallback(async () => {
-    setIsGenerating(true);
-    
-    try {
-      console.log('🎯 Génération d\'un nouveau plan d\'entraînement...');
-      console.log('👤 Using profile data:', profileData);
-      
-      // Try to generate workout using RapidAPI first with profile data
-      let workoutResult = await generateWorkoutPlan(profileData);
-      
-      // If RapidAPI fails, use Ella service as fallback
-      if (!workoutResult.success) {
-        console.log('⚠️ RapidAPI failed, using Ella service fallback...');
-        try {
-          const { generateEllaWorkout } = await import('../services/ellaWorkoutService');
-          workoutResult = await generateEllaWorkout(profileData);
-          console.log('✅ Fallback to Ella service successful');
-        } catch (ellaError) {
-          console.warn('⚠️ Ella service also failed, using mock data:', ellaError);
-          workoutResult = getMockWorkoutPlan();
+        console.log('📭 No profile found, creating default...');
+        // Create default profile if none exists
+        const createResult = await userProfileService.createUserProfile({
+          id: 'ella-default'
+        });
+        if (createResult.success) {
+          setUserProfile(createResult.profile);
         }
       }
-
-      if (workoutResult.success) {
-        // Save workout to Firebase
-        const workoutId = await workoutSessionService.saveWorkoutSession(workoutResult.data);
-        const savedWorkout = { ...workoutResult.data, id: workoutId };
-        
-        // Update parent component
-        onWorkoutGenerated(savedWorkout);
-        
-        // Refresh saved workouts list
-        await loadSavedWorkouts();
-        
-        console.log('✅ Plan d\'entraînement généré avec succès');
-        
-      } else {
-        throw new Error(workoutResult.error || 'Failed to generate workout plan');
-      }
       
     } catch (error) {
-      console.error('❌ Erreur génération workout:', error);
-      handleError(new Error(`Échec génération plan: ${error.message}`));
+      console.error('Error loading user profile:', error);
+      handleError(new Error('Failed to load user profile'));
     } finally {
-      setIsGenerating(false);
-    }
-  }, [profileData, onWorkoutGenerated, handleError, loadSavedWorkouts]);
-
-
-  /**
-   * Save current workout to favorites
-   */
-  const handleSaveWorkout = useCallback(async () => {
-    if (!currentWorkout) return;
-    
-    try {
-      setIsLoading(true);
-      // Workout is already saved when generated, just show success
-      await loadSavedWorkouts();
-    } catch (error) {
-      handleError(new Error('Failed to save workout'));
-    } finally {
-      setIsLoading(false);
-    }
-  }, [currentWorkout, setIsLoading, handleError, loadSavedWorkouts]);
-
-  /**
-   * Mark current workout as completed
-   */
-  const handleCompleteWorkout = useCallback(async () => {
-    if (!currentWorkout || isCompleting) return;
-    
-    try {
-      setIsCompleting(true);
-      
-      // Mark workout session as completed in Firebase
-      if (currentWorkout.id) {
-        await workoutSessionService.markSessionCompleted(currentWorkout.id);
-      }
-      
-      // Update local state
-      setIsCompleted(true);
-      
-      // Refresh saved workouts to reflect completion status
-      await loadSavedWorkouts();
-      
-      console.log('✅ Workout marked as completed!');
-      
-    } catch (error) {
-      console.error('Error completing workout:', error);
-      handleError(new Error('Failed to mark workout as completed'));
-    } finally {
-      setIsCompleting(false);
-    }
-  }, [currentWorkout, isCompleting, handleError, loadSavedWorkouts]);
-
-  /**
-   * Mark a session as completed
-   */
-  const handleCompleteSession = useCallback(async (sessionId) => {
-    try {
-      // Add session to completed sessions
-      setCompletedSessions(prev => [...prev, sessionId]);
-      
-      console.log('✅ Session marked as completed:', sessionId);
-      
-    } catch (error) {
-      console.error('Error completing session:', error);
-      handleError(new Error('Failed to mark session as completed'));
+      setIsLoadingProfile(false);
     }
   }, [handleError]);
-
-  /**
-   * Validate today's workout and record it in daily progress
-   */
-  const handleValidateDailyWorkout = useCallback(async () => {
-    if (!currentWorkout || isValidating || hasCompletedToday) return;
-    
-    try {
-      setIsValidating(true);
-      
-      // Record in daily workout tracking
-      await dailyWorkoutService.validateWorkoutSession(currentWorkout);
-      
-      // Update today's status
-      setHasCompletedToday(true);
-      
-      // Refresh status
-      await loadTodaysStatus();
-      
-      console.log('🎉 Daily workout validated and recorded!');
-      
-    } catch (error) {
-      console.error('Error validating daily workout:', error);
-      handleError(new Error('Failed to validate daily workout'));
-    } finally {
-      setIsValidating(false);
-    }
-  }, [currentWorkout, isValidating, hasCompletedToday, handleError, loadTodaysStatus]);
 
   /**
    * Handle session card click to expand/collapse
@@ -580,12 +327,7 @@ const WorkoutGenerator = ({ onWorkoutGenerated, currentWorkout }) => {
    */
   const handleStartSession = useCallback((session, event) => {
     event.stopPropagation();
-    const sessionExercises = [
-      ...(session.warmup || []),
-      ...(session.mainWorkout || []),
-      ...(session.cooldown || [])
-    ];
-    setPlayingSession(sessionExercises);
+    setPlayingSession(session.exercises);
   }, []);
 
   /**
@@ -596,37 +338,83 @@ const WorkoutGenerator = ({ onWorkoutGenerated, currentWorkout }) => {
   }, []);
 
   /**
-   * Count total exercises in a session
+   * Handle session validation
    */
-  const getSessionExerciseCount = useCallback((session) => {
-    const warmupCount = session.warmup?.length || 0;
-    const mainCount = session.mainWorkout?.length || 0;
-    const cooldownCount = session.cooldown?.length || 0;
-    return warmupCount + mainCount + cooldownCount;
-  }, []);
+  const handleValidateSession = useCallback(async (sessionId, weekNumber, event) => {
+    event.stopPropagation();
+    
+    if (!userProfile?.id || validatingSession === sessionId) return;
+    
+    try {
+      setValidatingSession(sessionId);
+      
+      const result = await userProfileService.validateSession(
+        userProfile.id, 
+        sessionId, 
+        weekNumber
+      );
+      
+      if (result.success) {
+        // Update local state with new profile data
+        setUserProfile(result.profile);
+        
+        if (result.weekCompleted) {
+          // Show week completion message
+          console.log(`🎉 Week ${weekNumber} completed! Moving to week ${result.newWeek}`);
+        }
+        
+        console.log(`✅ Session ${sessionId} validated successfully`);
+      } else {
+        throw new Error(result.error);
+      }
+      
+    } catch (error) {
+      console.error('Error validating session:', error);
+      handleError(new Error('Failed to validate session'));
+    } finally {
+      setValidatingSession(null);
+    }
+  }, [userProfile, validatingSession, handleError]);
 
   /**
-   * Estimate session duration
+   * Get current week's sessions
    */
-  const getSessionDuration = useCallback((session) => {
-    // Simple estimation based on exercise count
-    const exerciseCount = getSessionExerciseCount(session);
-    return Math.round(exerciseCount * 3 + 10); // ~3min per exercise + 10min overhead
-  }, [getSessionExerciseCount]);
+  const getCurrentWeekData = useCallback(() => {
+    if (!userProfile) return null;
+    
+    const currentWeek = Math.min(userProfile.currentWeek || 1, 4); // Cap at week 4
+    const weekData = WORKOUT_PROGRAM.find(week => week.week === currentWeek);
+    
+    return weekData;
+  }, [userProfile]);
 
   /**
-   * Render detailed exercise list for expanded session view
+   * Map session to available day
    */
-  const renderDetailedExerciseList = (session) => {
-    const allExercises = [
-      ...(session.warmup || []),
-      ...(session.mainWorkout || []),
-      ...(session.cooldown || [])
-    ];
+  const getSessionDay = useCallback((sessionIndex) => {
+    const availableDays = userProfile?.schedule?.availableDays || ['lundi', 'mercredi', 'vendredi'];
+    const dayMap = {
+      0: availableDays[0] || 'lundi',
+      1: availableDays[1] || 'mercredi', 
+      2: availableDays[2] || 'vendredi'
+    };
+    return dayMap[sessionIndex] || `Jour ${sessionIndex + 1}`;
+  }, [userProfile]);
 
+  /**
+   * Check if session is completed
+   */
+  const isSessionCompleted = useCallback((sessionId) => {
+    return userProfile?.completedSessionsThisWeek?.includes(sessionId) || false;
+  }, [userProfile]);
+
+  /**
+   * Render exercise list with details
+   */
+  const renderExerciseList = (exercises) => {
     return (
       <ExerciseList>
-        {allExercises.slice(0, 4).map((exercise, index) => (
+        {exercises.map((exercise, index) => (
           <ExerciseListItem key={index}>
             <ExerciseName>{exercise.name}</ExerciseName>
             <ExerciseDetails>
@@ -640,186 +428,144 @@ const WorkoutGenerator = ({ onWorkoutGenerated, currentWorkout }) => {
                 <DetailBadge>⏱️ {exercise.duration} min</DetailBadge>
               )}
             </ExerciseDetails>
+            {exercise.details && (
+              <ExerciseDescription>{exercise.details}</ExerciseDescription>
+            )}
           </ExerciseListItem>
         ))}
-        {allExercises.length > 4 && (
-          <ExerciseListItem style={{ fontStyle: 'italic', opacity: 0.7 }}>
-            +{allExercises.length - 4} autres exercices...
-          </ExerciseListItem>
-        )}
       </ExerciseList>
     );
   };
+
+  if (isLoadingProfile) {
+    return (
+      <GeneratorContainer>
+        <div style={{ textAlign: 'center', padding: '2rem' }}>
+          <LoadingSpinner size="large" text="Chargement de votre programme..." />
+        </div>
+      </GeneratorContainer>
+    );
+  }
+
+  const currentWeekData = getCurrentWeekData();
+  const isProgram = currentWeekData && userProfile?.currentWeek <= 4;
 
   return (
     <GeneratorContainer>
       {/* Header Section */}
       <GeneratorHeader>
-        <Title>Générez votre entraînement parfait</Title>
+        <Title>Votre Programme d'Entraînement</Title>
         <Subtitle>
-          {profileData ? (
-            `Plan personnalisé pour ${profileData.level} • ${profileData.goals?.join(' + ') || 'Fitness général'} • ${profileData.sessionsPerWeek}x par semaine • ${profileData.sessionDuration} min par séance`
-          ) : (
-            'Obtenez un plan d\'entraînement personnalisé basé sur vos objectifs, niveau et équipement disponible.'
-          )}
+          Programme progressif de 4 semaines pour développer votre endurance et votre force
         </Subtitle>
       </GeneratorHeader>
 
+      {/* Progress Section */}
+      {userProfile && (
+        <ProgressSection>
+          <WeekTitle>
+            {userProfile.currentWeek > 4 ? 
+              '🎉 Programme Terminé !' : 
+              `Semaine ${userProfile.currentWeek} sur 4`
+            }
+          </WeekTitle>
+          <ProgressInfo>
+            <ProgressCard>
+              <ProgressIcon>📅</ProgressIcon>
+              <ProgressTitle>Semaine Actuelle</ProgressTitle>
+              <ProgressValue>{Math.min(userProfile.currentWeek, 4)}/4</ProgressValue>
+            </ProgressCard>
+            <ProgressCard>
+              <ProgressIcon>✅</ProgressIcon>
+              <ProgressTitle>Séances Cette Semaine</ProgressTitle>
+              <ProgressValue>{userProfile.completedSessionsThisWeek?.length || 0}/3</ProgressValue>
+            </ProgressCard>
+            <ProgressCard>
+              <ProgressIcon>🏆</ProgressIcon>
+              <ProgressTitle>Total Entraînements</ProgressTitle>
+              <ProgressValue>{userProfile.totalWorkoutsCompleted || 0}</ProgressValue>
+            </ProgressCard>
+            <ProgressCard>
+              <ProgressIcon>🔥</ProgressIcon>
+              <ProgressTitle>Progression</ProgressTitle>
+              <ProgressValue>
+                {Math.round(((userProfile.totalWorkoutsCompleted || 0) / 12) * 100)}%
+              </ProgressValue>
+            </ProgressCard>
+          </ProgressInfo>
+        </ProgressSection>
+      )}
 
-      {/* Generation Section */}
-      <GenerateSection>
-        <WorkoutInfo>
-          <InfoCard>
-            <InfoIcon>🎯</InfoIcon>
-            <InfoTitle>Objectifs</InfoTitle>
-            <InfoValue>{profileData?.goals?.length ? profileData.goals.join(', ') : 'Fitness général'}</InfoValue>
-          </InfoCard>
-          <InfoCard>
-            <InfoIcon>🏃‍♀️</InfoIcon>
-            <InfoTitle>Niveau</InfoTitle>
-            <InfoValue>{profileData?.level || 'Débutante'}</InfoValue>
-          </InfoCard>
-          <InfoCard>
-            <InfoIcon>📅</InfoIcon>
-            <InfoTitle>Fréquence</InfoTitle>
-            <InfoValue>{profileData?.sessionsPerWeek || 3}x par semaine</InfoValue>
-          </InfoCard>
-          <InfoCard>
-            <InfoIcon>⏰</InfoIcon>
-            <InfoTitle>Durée</InfoTitle>
-            <InfoValue>{profileData?.sessionDuration || 45} minutes</InfoValue>
-          </InfoCard>
-        </WorkoutInfo>
+      {/* Program Complete Message */}
+      {userProfile?.currentWeek > 4 && (
+        <CompletionMessage>
+          <CompletionTitle>🎉 Félicitations !</CompletionTitle>
+          <CompletionText>
+            Vous avez terminé le programme de 4 semaines ! Vous avez développé votre endurance 
+            et votre force. Continuez à vous entraîner régulièrement pour maintenir vos acquis.
+          </CompletionText>
+        </CompletionMessage>
+      )}
 
-        <GenerateButton
-          onClick={handleGenerateWorkout}
-          disabled={isGenerating}
-        >
-          {isGenerating ? (
-            <>
-              <LoadingSpinner size="small" text="" />
-              Génération de votre entraînement...
-            </>
-          ) : (
-            '✨ Générer un nouveau plan d\'entraînement'
-          )}
-        </GenerateButton>
-      </GenerateSection>
-
-      {/* Current Workout Display */}
-      {currentWorkout && (
-        <WorkoutDisplay>
-          <WorkoutHeader>
-            <WorkoutTitle>{currentWorkout.title}</WorkoutTitle>
-            <WorkoutDescription>{currentWorkout.description}</WorkoutDescription>
-            <WorkoutStats>
-              <StatItem>
-                <strong>{currentWorkout.totalSessions}</strong>
-                <span>Séances</span>
-              </StatItem>
-              <StatItem>
-                <strong>{currentWorkout.estimatedDuration} min</strong>
-                <span>Par séance</span>
-              </StatItem>
-              <StatItem>
-                <strong>{currentWorkout.level}</strong>
-                <span>Difficulté</span>
-              </StatItem>
-            </WorkoutStats>
-          </WorkoutHeader>
-
-          {/* Sessions Grid - Accordion Style */}
-          <SessionsGrid>
-            {currentWorkout.sessions?.map((session) => {
-              const isExpanded = expandedSession === session.id;
-              const exerciseCount = getSessionExerciseCount(session);
-              const duration = getSessionDuration(session);
-              const isCompleted = completedSessions.includes(session.id);
-              
-              return (
-                <SessionCard 
-                  key={session.id} 
-                  onClick={() => handleSessionClick(session.id)}
-                  isCompleted={isCompleted}
-                >
-                  <SessionHeader>
-                    <div>
-                      <SessionTitle>{session.title}</SessionTitle>
-                    </div>
-                    <SessionStats>
-                      <span>💪 {exerciseCount} Exercices</span>
-                      <span>⏱️ {duration} min</span>
-                      <SessionStatus $completed={isCompleted}>
-                        {isCompleted ? '✅ Terminé' : 'À faire'}
-                      </SessionStatus>
-                    </SessionStats>
-                  </SessionHeader>
-                  
-                  <SessionContent $expanded={isExpanded}>
-                    {renderDetailedExerciseList(session)}
-                    <StartButton onClick={(e) => handleStartSession(session, e)}>
+      {/* Current Week Sessions */}
+      {isProgram && (
+        <SessionsGrid>
+          {currentWeekData.sessions.map((session, index) => {
+            const isExpanded = expandedSession === session.id;
+            const isCompleted = isSessionCompleted(session.id);
+            const sessionDay = getSessionDay(index);
+            const isValidating = validatingSession === session.id;
+            
+            return (
+              <SessionCard 
+                key={session.id} 
+                onClick={() => handleSessionClick(session.id)}
+                isCompleted={isCompleted}
+              >
+                <SessionHeader>
+                  <SessionTitleContainer>
+                    <SessionTitle>{session.title}</SessionTitle>
+                    <SessionDay>Entraînement du {sessionDay}</SessionDay>
+                  </SessionTitleContainer>
+                  <SessionStatus $completed={isCompleted}>
+                    {isCompleted ? '✅ Terminé' : 'À faire'}
+                  </SessionStatus>
+                </SessionHeader>
+                
+                <SessionContent $expanded={isExpanded}>
+                  {renderExerciseList(session.exercises)}
+                  <ActionButtons>
+                    <ActionButton 
+                      onClick={(e) => handleStartSession(session, e)}
+                    >
                       🚀 Commencer la séance
-                    </StartButton>
-                    {!isCompleted && (
-                      <StartButton 
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleCompleteSession(session.id);
-                        }}
-                        style={{ marginTop: '8px', background: '#4caf50' }}
+                    </ActionButton>
+                    {!isCompleted ? (
+                      <ActionButton 
+                        $primary
+                        onClick={(e) => handleValidateSession(session.id, currentWeekData.week, e)}
+                        disabled={isValidating}
                       >
-                        ✅ Marquer comme terminé
-                      </StartButton>
+                        {isValidating ? (
+                          <>
+                            <LoadingSpinner size="small" text="" />
+                            Validation...
+                          </>
+                        ) : (
+                          '✅ Valider la séance'
+                        )}
+                      </ActionButton>
+                    ) : (
+                      <ActionButton $success disabled>
+                        ✅ Séance validée
+                      </ActionButton>
                     )}
-                  </SessionContent>
-                </SessionCard>
-              );
-            })}
-          </SessionsGrid>
-
-          {/* Action Buttons */}
-          <ActionButtons>
-            <ActionButton onClick={handleGenerateWorkout}>
-              🔄 Générer un nouveau plan
-            </ActionButton>
-            <ActionButton onClick={handleSaveWorkout}>
-              ❤️ Ajouter aux favoris
-            </ActionButton>
-            <ActionButton 
-              $primary 
-              onClick={handleCompleteWorkout}
-              disabled={isCompleting || isCompleted}
-            >
-              {isCompleting ? (
-                <>Chargement...</>
-              ) : isCompleted ? (
-                '✅ Terminé !'
-              ) : (
-                '✨ Marquer comme terminé'
-              )}
-            </ActionButton>
-            <ActionButton 
-              $primary 
-              onClick={handleValidateDailyWorkout}
-              disabled={isValidating || hasCompletedToday}
-              style={{
-                background: hasCompletedToday ? '#4caf50' : undefined,
-                transform: hasCompletedToday ? 'none' : undefined
-              }}
-            >
-              {isValidating ? (
-                <>
-                  <LoadingSpinner size="small" text="" />
-                  Validation...
-                </>
-              ) : hasCompletedToday ? (
-                '🎉 Validé aujourd\'hui !'
-              ) : (
-                '📊 Valider l\'entraînement du jour'
-              )}
-            </ActionButton>
-          </ActionButtons>
-        </WorkoutDisplay>
+                  </ActionButtons>
+                </SessionContent>
+              </SessionCard>
+            );
+          })}
+        </SessionsGrid>
       )}
       
       {/* Workout Player Modal */}

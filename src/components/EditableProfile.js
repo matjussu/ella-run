@@ -276,6 +276,7 @@ const EditableProfile = () => {
   const [loading, setLoading] = useState(true);
   const [saveVisible, setSaveVisible] = useState(false);
   const [autoSaveTimeout, setAutoSaveTimeout] = useState(null);
+  const [renderKey, setRenderKey] = useState(0);
 
   // Load profile on mount
   useEffect(() => {
@@ -310,7 +311,19 @@ const EditableProfile = () => {
 
   const saveProfile = async (newProfile = profile) => {
     try {
-      await userProfileService.updateUserProfile('ella-default', newProfile);
+      // Try to update first, if it fails, create the profile
+      try {
+        await userProfileService.updateUserProfile('ella-default', newProfile);
+      } catch (updateError) {
+        if (updateError.message.includes('No document to update')) {
+          console.log('📝 Creating new profile document...');
+          // Create profile with the specific ID we expect
+          const profileWithId = { ...newProfile, id: 'ella-default' };
+          await userProfileService.createUserProfile(profileWithId);
+        } else {
+          throw updateError;
+        }
+      }
       
       setSaveVisible(true);
       setTimeout(() => setSaveVisible(false), 2000);
@@ -372,6 +385,9 @@ const EditableProfile = () => {
     // Update the profile immediately with the new array
     const updatedProfile = { ...currentProfile, [field]: newArray };
     setProfile(updatedProfile);
+    
+    // Force re-render by updating the render key
+    setRenderKey(prev => prev + 1);
     
     // Then handle auto-save
     if (autoSaveTimeout) {
@@ -503,10 +519,11 @@ const EditableProfile = () => {
               console.log(`🎯 Goal ${goal.value}: checked=${isChecked}, profile.goals=`, profile.goals);
               
               return (
-                <CheckboxItem key={goal.value}>
+                <CheckboxItem key={`${goal.value}-${renderKey}`}>
                   <input
                     type="checkbox"
                     checked={isChecked}
+                    value={goal.value}
                     onChange={(e) => {
                       console.log(`🎯 Goal checkbox changed: ${goal.value}, checked: ${e.target.checked}`);
                       handleArrayChange('goals', goal.value, e.target.checked);
@@ -546,7 +563,7 @@ const EditableProfile = () => {
                 console.log(`📅 Day ${day.value}: checked=${isChecked}, profile.availableDays=`, profile.availableDays);
                 
                 return (
-                  <CheckboxItem key={`${day.value}-${profile.availableDays?.length || 0}`}>
+                  <CheckboxItem key={`${day.value}-${renderKey}`}>
                     <input
                       type="checkbox"
                       checked={isChecked}

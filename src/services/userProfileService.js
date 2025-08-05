@@ -44,8 +44,8 @@ const DEFAULT_PROFILE = {
  */
 export const createUserProfile = async (profileData) => {
   try {
-    // Generate unique profile ID
-    const profileId = generateProfileId(profileData.personalInfo.name);
+    // Use provided ID or generate unique profile ID
+    const profileId = profileData.id || generateProfileId(profileData.personalInfo?.name || 'user');
     
     // Merge with default profile structure
     const completeProfile = {

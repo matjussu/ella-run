@@ -730,8 +730,10 @@ function App() {
           );
         case APP_STATES.WORKOUT_GENERATOR:
           return (
-            <WorkoutPlanner
+            <WorkoutGenerator
+              currentWorkout={currentWorkout}
               onExerciseSelect={handleExerciseSelect}
+              onWorkoutGenerated={handleWorkoutGenerated}
             />
           );
         case APP_STATES.EXERCISE_DETAILS:

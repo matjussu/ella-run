@@ -16,6 +16,9 @@ import EllaProfile from './components/EllaProfile';
 import MilestoneTracker from './components/MilestoneTracker';
 import OnboardingFlow from './components/OnboardingFlow';
 import PWAInstallPrompt from './components/PWAInstallPrompt';
+import AppDownloadBanner from './components/AppDownloadBanner';
+import MobileNavigation from './components/MobileNavigation';
+import { useMobileGestures } from './hooks/useMobileGestures';
 import { userProgressService } from './services/firebaseService';
 import userProfileService from './services/userProfileService';
 import { generateWorkoutPlan } from './services/rapidApiService';
@@ -87,30 +90,134 @@ const theme = {
   }
 };
 
-// Global styles for the application
+// Global styles for the application with mobile optimizations
 const GlobalStyle = createGlobalStyle`
+  /* Base styles */
+  * {
+    box-sizing: border-box;
+  }
+
+  html {
+    scroll-behavior: smooth;
+    /* Prevent zoom on iOS */
+    -webkit-text-size-adjust: 100%;
+    /* Enable smooth scrolling */
+    -webkit-overflow-scrolling: touch;
+  }
+
   body {
     font-family: ${props => props.theme.fonts.primary};
     background: ${props => props.theme.colors.background.gradient};
     color: ${props => props.theme.colors.text.primary};
     line-height: 1.6;
-  }
-
-  * {
-    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    
+    /* Mobile optimizations */
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    
+    /* Prevent scroll bounce on iOS */
+    overscroll-behavior: none;
+    
+    /* Safe area for notch devices */
+    padding-top: env(safe-area-inset-top);
+    padding-bottom: env(safe-area-inset-bottom);
+    
+    @media (max-width: ${props => props.theme.breakpoints.mobile}) {
+      /* Add bottom padding for mobile navigation */
+      padding-bottom: calc(80px + env(safe-area-inset-bottom));
+    }
   }
 
   button {
     font-family: ${props => props.theme.fonts.primary};
+    /* Improve touch targets on mobile */
+    min-height: 44px;
+    min-width: 44px;
+    
+    /* Remove iOS button styling */
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    appearance: none;
+    
+    /* Prevent text selection */
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+    
+    /* Better touch feedback */
+    touch-action: manipulation;
   }
 
-  html {
-    scroll-behavior: smooth;
-  }
-
+  /* Focus styles - better for mobile */
   *:focus {
     outline: 2px solid ${props => props.theme.colors.primary};
     outline-offset: 2px;
+  }
+
+  /* Remove focus outline on touch devices */
+  @media (hover: none) and (pointer: coarse) {
+    *:focus {
+      outline: none;
+    }
+  }
+
+  /* Input optimizations for mobile */
+  input, textarea, select {
+    /* Prevent zoom on iOS */
+    font-size: 16px;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    appearance: none;
+    
+    /* Better touch targets */
+    min-height: 44px;
+    padding: ${props => props.theme.spacing.sm};
+    border-radius: ${props => props.theme.borderRadius.medium};
+    border: 1px solid ${props => props.theme.colors.border};
+    background: ${props => props.theme.colors.secondary};
+  }
+
+  /* Scrollbar styling */
+  ::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: ${props => props.theme.colors.primary}40;
+    border-radius: 3px;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background: ${props => props.theme.colors.primary}60;
+  }
+
+  /* Selection styling */
+  ::selection {
+    background: ${props => props.theme.colors.primary}30;
+    color: ${props => props.theme.colors.text.primary};
+  }
+
+  /* Tap highlight removal */
+  * {
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  /* Better font rendering */
+  @media screen and (max-width: ${props => props.theme.breakpoints.mobile}) {
+    body {
+      font-size: 14px;
+    }
+    
+    h1, h2, h3, h4, h5, h6 {
+      line-height: 1.3;
+    }
   }
 `;
 
@@ -132,7 +239,7 @@ const AppContainer = styled.div`
   flex-direction: column;
 `;
 
-// Header Component
+// Header Component - hidden on mobile
 const Header = styled.header`
   background: linear-gradient(135deg, ${props => props.theme.colors.secondary} 0%, ${props => props.theme.colors.background.secondary} 100%);
   box-shadow: ${props => props.theme.colors.shadow};
@@ -141,6 +248,10 @@ const Header = styled.header`
   top: 0;
   z-index: 100;
   border-bottom: 3px solid ${props => props.theme.colors.primary};
+  
+  @media (max-width: ${props => props.theme.breakpoints.mobile}) {
+    display: none;
+  }
 `;
 
 const HeaderContent = styled.div`
@@ -267,16 +378,22 @@ const MainContent = styled.main`
   
   @media (max-width: ${props => props.theme.breakpoints.mobile}) {
     padding: ${props => props.theme.spacing.lg} ${props => props.theme.spacing.sm};
+    /* Add top padding to account for potential download banner */
+    padding-top: calc(${props => props.theme.spacing.lg} + 20px);
   }
 `;
 
-// Footer Component
+// Footer Component - hidden on mobile
 const Footer = styled.footer`
   background: ${props => props.theme.colors.secondary};
   padding: ${props => props.theme.spacing.lg} 0;
   text-align: center;
   color: ${props => props.theme.colors.text.secondary};
   border-top: 1px solid ${props => props.theme.colors.border};
+  
+  @media (max-width: ${props => props.theme.breakpoints.mobile}) {
+    display: none;
+  }
 `;
 
 // App States
@@ -329,6 +446,25 @@ function App() {
   const [onboardingCompleted, setOnboardingCompleted] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
+  
+  // Mobile gestures hook
+  const { addHapticFeedback, isMobile } = useMobileGestures({
+    onSwipeLeft: () => {
+      // Navigate to next view on swipe left
+      if (currentView === 'home') handleNavigate('workout_generator');
+      else if (currentView === 'workout_generator') handleNavigate('progress');
+    },
+    onSwipeRight: () => {
+      // Navigate to previous view on swipe right
+      if (currentView === 'progress') handleNavigate('workout_generator');
+      else if (currentView === 'workout_generator') handleNavigate('home');
+    },
+    onPullToRefresh: () => {
+      // Refresh current view content
+      if (currentView === 'progress') loadUserProgress();
+      else if (currentView === 'home') initializeApp();
+    }
+  });
   
   // No longer need the initializationAttempted state
   // const [initializationAttempted, setInitializationAttempted] = useState(false);
@@ -487,6 +623,11 @@ function App() {
    * Handle navigation between views
    */
   const handleNavigate = (view) => {
+    // Add haptic feedback on mobile
+    if (isMobile()) {
+      addHapticFeedback([50]);
+    }
+    
     setCurrentView(view);
     setError(null);
   };
@@ -654,6 +795,9 @@ function App() {
       <ErrorBoundary onError={handleError}>
         <AppContext.Provider value={contextValue}>
           <AppContainer>
+            {/* App Download Banner */}
+            <AppDownloadBanner />
+            
             {/* PWA Install Prompt */}
             <PWAInstallPrompt />
             
@@ -716,7 +860,13 @@ function App() {
               {renderCurrentView()}
             </MainContent>
 
-            {/* Footer */}
+            {/* Mobile Navigation */}
+            <MobileNavigation 
+              currentView={currentView}
+              onNavigate={handleNavigate}
+            />
+            
+            {/* Footer - hidden on mobile */}
             <Footer>
               <p>Créé avec 💖 pour l'incroyable parcours fitness d'Ella • Tu deviens plus forte chaque jour ! 🌟</p>
             </Footer>

@@ -204,6 +204,19 @@ const DEFAULT_PROFILE = {
   preferences: ['running', 'bodyweight']
 };
 
+// Helper function to ensure profile has all required array fields
+const ensureProfileArrays = (profile) => {
+  return {
+    ...profile,
+    goals: Array.isArray(profile.goals) ? profile.goals : ['endurance'],
+    targetAreas: Array.isArray(profile.targetAreas) ? profile.targetAreas : ['full_body'],
+    availableDays: Array.isArray(profile.availableDays) ? profile.availableDays : ['monday', 'wednesday', 'friday'],
+    equipment: Array.isArray(profile.equipment) ? profile.equipment : ['none'],
+    injuries: Array.isArray(profile.injuries) ? profile.injuries : [],
+    preferences: Array.isArray(profile.preferences) ? profile.preferences : ['running']
+  };
+};
+
 const FITNESS_LEVELS = [
   { value: 'beginner', label: 'Débutante' },
   { value: 'intermediate', label: 'Intermédiaire' },
@@ -274,11 +287,22 @@ const EditableProfile = () => {
       setLoading(true);
       const savedProfile = await userProfileService.getUserProfileByName('Ella');
       
+      console.log('📁 Saved profile from database:', savedProfile);
+      console.log('📁 Default profile:', DEFAULT_PROFILE);
+      
       if (savedProfile) {
-        setProfile({ ...DEFAULT_PROFILE, ...savedProfile });
+        const mergedProfile = ensureProfileArrays({ ...DEFAULT_PROFILE, ...savedProfile });
+        console.log('📁 Merged profile:', mergedProfile);
+        setProfile(mergedProfile);
+      } else {
+        console.log('📁 Using default profile');
+        const defaultProfile = ensureProfileArrays(DEFAULT_PROFILE);
+        setProfile(defaultProfile);
       }
     } catch (error) {
       console.error('Error loading profile:', error);
+      // Fallback to default profile on error
+      setProfile(ensureProfileArrays(DEFAULT_PROFILE));
     } finally {
       setLoading(false);
     }
@@ -298,7 +322,11 @@ const EditableProfile = () => {
   };
 
   const handleInputChange = (field, value) => {
+    console.log(`💾 Input change: ${field} =`, value);
+    
     const newProfile = { ...profile, [field]: value };
+    console.log(`💾 New profile state:`, newProfile);
+    
     setProfile(newProfile);
     
     // Auto-save after 1 second of no changes
@@ -307,6 +335,7 @@ const EditableProfile = () => {
     }
     
     const timeout = setTimeout(() => {
+      console.log(`💾 Auto-saving profile for field: ${field}`);
       saveProfile(newProfile);
     }, 1000);
     
@@ -314,16 +343,47 @@ const EditableProfile = () => {
   };
 
   const handleArrayChange = (field, value, checked) => {
-    const currentArray = profile[field] || [];
+    console.log(`🔄 Array change: ${field}, value: ${value}, checked: ${checked}`);
+    
+    // Force a fresh copy of the current profile to avoid reference issues
+    const currentProfile = { ...profile };
+    const currentArray = Array.isArray(currentProfile[field]) ? [...currentProfile[field]] : [];
+    console.log(`Current ${field}:`, currentArray);
+    
     let newArray;
     
     if (checked) {
-      newArray = [...currentArray, value];
+      // Add if not already present
+      if (!currentArray.includes(value)) {
+        newArray = [...currentArray, value];
+        console.log(`✅ Adding ${value} to ${field}`);
+      } else {
+        console.log(`⚠️ ${value} already in ${field}`);
+        return; // Don't update if already present
+      }
     } else {
+      // Remove if present
       newArray = currentArray.filter(item => item !== value);
+      console.log(`❌ Removing ${value} from ${field}`);
     }
     
-    handleInputChange(field, newArray);
+    console.log(`New ${field}:`, newArray);
+    
+    // Update the profile immediately with the new array
+    const updatedProfile = { ...currentProfile, [field]: newArray };
+    setProfile(updatedProfile);
+    
+    // Then handle auto-save
+    if (autoSaveTimeout) {
+      clearTimeout(autoSaveTimeout);
+    }
+    
+    const timeout = setTimeout(() => {
+      console.log(`💾 Auto-saving profile for array field: ${field}`);
+      saveProfile(updatedProfile);
+    }, 1000);
+    
+    setAutoSaveTimeout(timeout);
   };
 
   // Calculate BMI
@@ -438,16 +498,24 @@ const EditableProfile = () => {
         <FormSection>
           <SectionTitle>Objectifs fitness</SectionTitle>
           <CheckboxGroup>
-            {GOALS.map(goal => (
-              <CheckboxItem key={goal.value}>
-                <input
-                  type="checkbox"
-                  checked={profile.goals?.includes(goal.value) || false}
-                  onChange={(e) => handleArrayChange('goals', goal.value, e.target.checked)}
-                />
-                {goal.label}
-              </CheckboxItem>
-            ))}
+            {GOALS.map(goal => {
+              const isChecked = profile.goals?.includes(goal.value) || false;
+              console.log(`🎯 Goal ${goal.value}: checked=${isChecked}, profile.goals=`, profile.goals);
+              
+              return (
+                <CheckboxItem key={goal.value}>
+                  <input
+                    type="checkbox"
+                    checked={isChecked}
+                    onChange={(e) => {
+                      console.log(`🎯 Goal checkbox changed: ${goal.value}, checked: ${e.target.checked}`);
+                      handleArrayChange('goals', goal.value, e.target.checked);
+                    }}
+                  />
+                  {goal.label}
+                </CheckboxItem>
+              );
+            })}
           </CheckboxGroup>
         </FormSection>
 
@@ -473,16 +541,24 @@ const EditableProfile = () => {
           <FormGroup>
             <Label>Jours disponibles</Label>
             <CheckboxGroup>
-              {DAYS_OF_WEEK.map(day => (
-                <CheckboxItem key={day.value}>
-                  <input
-                    type="checkbox"
-                    checked={profile.availableDays?.includes(day.value) || false}
-                    onChange={(e) => handleArrayChange('availableDays', day.value, e.target.checked)}
-                  />
-                  {day.label}
-                </CheckboxItem>
-              ))}
+              {DAYS_OF_WEEK.map(day => {
+                const isChecked = profile.availableDays?.includes(day.value) || false;
+                console.log(`📅 Day ${day.value}: checked=${isChecked}, profile.availableDays=`, profile.availableDays);
+                
+                return (
+                  <CheckboxItem key={day.value}>
+                    <input
+                      type="checkbox"
+                      checked={isChecked}
+                      onChange={(e) => {
+                        console.log(`📅 Day checkbox changed: ${day.value}, checked: ${e.target.checked}`);
+                        handleArrayChange('availableDays', day.value, e.target.checked);
+                      }}
+                    />
+                    {day.label}
+                  </CheckboxItem>
+                );
+              })}
             </CheckboxGroup>
           </FormGroup>
 

@@ -310,7 +310,7 @@ const EditableProfile = () => {
 
   const saveProfile = async (newProfile = profile) => {
     try {
-      await userProfileService.saveUserProfile(newProfile);
+      await userProfileService.updateUserProfile('ella-default', newProfile);
       
       setSaveVisible(true);
       setTimeout(() => setSaveVisible(false), 2000);
@@ -546,10 +546,11 @@ const EditableProfile = () => {
                 console.log(`📅 Day ${day.value}: checked=${isChecked}, profile.availableDays=`, profile.availableDays);
                 
                 return (
-                  <CheckboxItem key={day.value}>
+                  <CheckboxItem key={`${day.value}-${profile.availableDays?.length || 0}`}>
                     <input
                       type="checkbox"
                       checked={isChecked}
+                      value={day.value}
                       onChange={(e) => {
                         console.log(`📅 Day checkbox changed: ${day.value}, checked: ${e.target.checked}`);
                         handleArrayChange('availableDays', day.value, e.target.checked);

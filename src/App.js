@@ -6,13 +6,13 @@
 
 import React, { useState, useEffect, createContext, useContext } from 'react';
 import styled, { ThemeProvider, createGlobalStyle } from 'styled-components';
-import WorkoutGenerator from './components/WorkoutGenerator';
+import WorkoutPlanner from './components/WorkoutPlanner';
 import ExerciseDetails from './components/ExerciseDetails';
 import ProgressDashboard from './components/ProgressDashboard';
 import ErrorBoundary from './components/ErrorBoundary';
 import LoadingSpinner from './components/LoadingSpinner';
 import PersonalizedDashboard from './components/PersonalizedDashboard';
-import EllaProfile from './components/EllaProfile';
+import EditableProfile from './components/EditableProfile';
 import MilestoneTracker from './components/MilestoneTracker';
 import OnboardingFlow from './components/OnboardingFlow';
 import PWAInstallPrompt from './components/PWAInstallPrompt';
@@ -675,11 +675,8 @@ function App() {
           );
         case APP_STATES.WORKOUT_GENERATOR:
           return (
-            <WorkoutGenerator
-              onWorkoutGenerated={handleWorkoutGenerated}
+            <WorkoutPlanner
               onExerciseSelect={handleExerciseSelect}
-              currentWorkout={currentWorkout}
-              isPersonalized={true}
             />
           );
         case APP_STATES.EXERCISE_DETAILS:
@@ -697,7 +694,7 @@ function App() {
             />
           );
         case APP_STATES.PROFILE:
-          return <EllaProfile />;
+          return <EditableProfile />;
         case APP_STATES.ACHIEVEMENTS:
           return <MilestoneTracker />;
         default:

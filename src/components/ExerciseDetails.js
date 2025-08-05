@@ -9,7 +9,7 @@
 import React, { useState, useCallback, useEffect } from 'react';
 import styled from 'styled-components';
 import { exerciseService } from '../services/firebaseService';
-import { getExerciseVisual } from '../services/exerciseVisualsService';
+import { getEnhancedExerciseVisual, hasVideoGuide } from '../services/enhancedExerciseVisualsService';
 import { useAppContext } from '../App';
 import LoadingSpinner from './LoadingSpinner';
 
@@ -492,41 +492,7 @@ const ExerciseDetails = ({ exercise, onBack }) => {
               🎥 Guide Visuel
             </SectionTitle>
             <MediaContainer>
-              {(() => {
-                const visualGuide = getExerciseVisual(exerciseData.name);
-                if (visualGuide && visualGuide.image) {
-                  return (
-                    <div>
-                      <img 
-                        src={visualGuide.image} 
-                        alt={`Guide visuel pour ${exerciseData.name}`}
-                        style={{ 
-                          maxWidth: '100%', 
-                          borderRadius: '12px',
-                          marginBottom: '1rem',
-                          boxShadow: '0 4px 12px rgba(0,0,0,0.1)'
-                        }}
-                      />
-                      {visualGuide.description && (
-                        <p style={{ 
-                          textAlign: 'center', 
-                          fontStyle: 'italic',
-                          color: '#666',
-                          marginTop: '0.5rem'
-                        }}>
-                          {visualGuide.description}
-                        </p>
-                      )}
-                    </div>
-                  );
-                } else {
-                  return (
-                    <PlaceholderImage>
-                      📸 Guide visuel pour {exerciseData.name}
-                    </PlaceholderImage>
-                  );
-                }
-              })()}
+              <EnhancedVisualGuide exerciseName={exerciseData.name} />
             </MediaContainer>
           </Section>
 
@@ -563,5 +529,192 @@ const ExerciseDetails = ({ exercise, onBack }) => {
     </DetailsContainer>
   );
 };
+
+// Enhanced Visual Guide Component
+const EnhancedVisualGuide = ({ exerciseName }) => {
+  const [showVideo, setShowVideo] = useState(false);
+  const visualGuide = getEnhancedExerciseVisual(exerciseName);
+
+  if (!visualGuide) {
+    return (
+      <PlaceholderImage>
+        📸 Guide visuel non disponible
+      </PlaceholderImage>
+    );
+  }
+
+  return (
+    <VisualGuideContainer>
+      {/* Video/Image Toggle */}
+      {visualGuide.video && !visualGuide.isFallback && (
+        <MediaToggle>
+          <ToggleButton 
+            $active={!showVideo} 
+            onClick={() => setShowVideo(false)}
+          >
+            📸 Photo
+          </ToggleButton>
+          <ToggleButton 
+            $active={showVideo} 
+            onClick={() => setShowVideo(true)}
+          >
+            🎥 Vidéo
+          </ToggleButton>
+        </MediaToggle>
+      )}
+
+      {/* Media Display */}
+      <MediaDisplay>
+        {showVideo && visualGuide.video ? (
+          <VideoFrame>
+            <iframe
+              src={visualGuide.video}
+              title={`Vidéo guide pour ${exerciseName}`}
+              frameBorder="0"
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+              allowFullScreen
+              style={{
+                width: '100%',
+                height: '100%',
+                borderRadius: '12px'
+              }}
+            />
+          </VideoFrame>
+        ) : (
+          <ExerciseImage
+            src={visualGuide.image}
+            alt={`Guide visuel pour ${exerciseName}`}
+            onError={(e) => {
+              e.target.src = `https://via.placeholder.com/600x400/ff69b4/ffffff?text=${encodeURIComponent(exerciseName)}`;
+            }}
+          />
+        )}
+      </MediaDisplay>
+
+      {/* Description */}
+      {visualGuide.description && (
+        <MediaDescription>
+          {visualGuide.description}
+        </MediaDescription>
+      )}
+
+      {/* Instructions */}
+      {visualGuide.instructions && visualGuide.instructions.length > 0 && (
+        <InstructionsList>
+          <h4 style={{ margin: '1rem 0 0.5rem 0', color: '#ff69b4' }}>
+            📋 Instructions détaillées:
+          </h4>
+          {visualGuide.instructions.map((instruction, index) => (
+            <InstructionItem key={index}>
+              <span style={{ color: '#ff69b4', fontWeight: 'bold' }}>
+                {index + 1}.
+              </span>
+              {instruction}
+            </InstructionItem>
+          ))}
+        </InstructionsList>
+      )}
+
+      {/* Fallback notice */}
+      {visualGuide.isFallback && (
+        <FallbackNotice>
+          ℹ️ Guide générique - Consultez un professionnel pour les détails spécifiques
+        </FallbackNotice>
+      )}
+    </VisualGuideContainer>
+  );
+};
+
+// Additional styled components for the enhanced visual guide
+const VisualGuideContainer = styled.div`
+  width: 100%;
+`;
+
+const MediaToggle = styled.div`
+  display: flex;
+  gap: ${props => props.theme.spacing.sm};
+  margin-bottom: ${props => props.theme.spacing.md};
+  justify-content: center;
+`;
+
+const ToggleButton = styled.button`
+  background: ${props => props.$active ? props.theme.colors.primary : 'transparent'};
+  color: ${props => props.$active ? 'white' : props.theme.colors.primary};
+  border: 2px solid ${props => props.theme.colors.primary};
+  padding: ${props => props.theme.spacing.sm} ${props => props.theme.spacing.md};
+  border-radius: ${props => props.theme.borderRadius.pill};
+  font-weight: ${props => props.theme.fonts.weights.medium};
+  cursor: pointer;
+  transition: all 0.3s ease;
+
+  &:hover {
+    background: ${props => props.theme.colors.primary};
+    color: white;
+  }
+`;
+
+const MediaDisplay = styled.div`
+  width: 100%;
+  margin-bottom: ${props => props.theme.spacing.md};
+`;
+
+const ExerciseImage = styled.img`
+  width: 100%;
+  height: 300px;
+  object-fit: cover;
+  border-radius: ${props => props.theme.borderRadius.medium};
+  box-shadow: ${props => props.theme.colors.shadow};
+  transition: transform 0.3s ease;
+
+  &:hover {
+    transform: scale(1.02);
+  }
+`;
+
+const VideoFrame = styled.div`
+  width: 100%;
+  height: 300px;
+  border-radius: ${props => props.theme.borderRadius.medium};
+  overflow: hidden;
+  box-shadow: ${props => props.theme.colors.shadow};
+`;
+
+const MediaDescription = styled.p`
+  text-align: center;
+  font-style: italic;
+  color: ${props => props.theme.colors.text.secondary};
+  margin: ${props => props.theme.spacing.sm} 0;
+  font-size: ${props => props.theme.fonts.sizes.md};
+`;
+
+const InstructionsList = styled.div`
+  background: ${props => props.theme.colors.background.secondary};
+  padding: ${props => props.theme.spacing.md};
+  border-radius: ${props => props.theme.borderRadius.medium};
+  margin-top: ${props => props.theme.spacing.md};
+`;
+
+const InstructionItem = styled.div`
+  display: flex;
+  gap: ${props => props.theme.spacing.sm};
+  align-items: flex-start;
+  margin-bottom: ${props => props.theme.spacing.sm};
+  font-size: ${props => props.theme.fonts.sizes.sm};
+  line-height: 1.4;
+
+  &:last-child {
+    margin-bottom: 0;
+  }
+`;
+
+const FallbackNotice = styled.div`
+  background: #fff3cd;
+  color: #856404;
+  padding: ${props => props.theme.spacing.sm};
+  border-radius: ${props => props.theme.borderRadius.small};
+  font-size: ${props => props.theme.fonts.sizes.sm};
+  text-align: center;
+  margin-top: ${props => props.theme.spacing.sm};
+`;
 
 export default ExerciseDetails;

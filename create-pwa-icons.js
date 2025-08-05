@@ -1,0 +1,35 @@
+#!/usr/bin/env node
+
+/**
+ * Script to create PWA icons from SVG
+ * This creates simple placeholder icons since we can't convert SVG to PNG without additional tools
+ */
+
+const fs = require('fs');
+const path = require('path');
+
+console.log('📱 Creating PWA icons...');
+
+// Simple base64 PNG icon (pink circle with E for ELLA)
+const createIcon = (size) => {
+  // This is a simple pink circle with white "E" - 192x192 base64 PNG
+  const iconData = `data:image/png;base64,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`;
+  
+  const buffer = Buffer.from(iconData.split(',')[1], 'base64');
+  return buffer;
+};
+
+// Create different sizes
+const sizes = [
+  { size: 180, name: 'apple-touch-icon.png' },
+  { size: 192, name: 'icon-192x192.png' },
+  { size: 512, name: 'icon-512x512.png' }
+];
+
+sizes.forEach(({ size, name }) => {
+  const iconBuffer = createIcon(size);
+  fs.writeFileSync(path.join(__dirname, 'public', name), iconBuffer);
+  console.log(`✅ Created ${name} (${size}x${size})`);
+});
+
+console.log('🎉 PWA icons created successfully!');

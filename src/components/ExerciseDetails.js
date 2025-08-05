@@ -600,19 +600,19 @@ const EnhancedVisualGuide = ({ exerciseName }) => {
 
       {/* Instructions */}
       {visualGuide.instructions && visualGuide.instructions.length > 0 && (
-        <InstructionsList>
+        <EnhancedInstructionsList>
           <h4 style={{ margin: '1rem 0 0.5rem 0', color: '#ff69b4' }}>
             📋 Instructions détaillées:
           </h4>
           {visualGuide.instructions.map((instruction, index) => (
-            <InstructionItem key={index}>
+            <EnhancedInstructionItem key={index}>
               <span style={{ color: '#ff69b4', fontWeight: 'bold' }}>
                 {index + 1}.
               </span>
               {instruction}
-            </InstructionItem>
+            </EnhancedInstructionItem>
           ))}
-        </InstructionsList>
+        </EnhancedInstructionsList>
       )}
 
       {/* Fallback notice */}
@@ -687,14 +687,14 @@ const MediaDescription = styled.p`
   font-size: ${props => props.theme.fonts.sizes.md};
 `;
 
-const InstructionsList = styled.div`
+const EnhancedInstructionsList = styled.div`
   background: ${props => props.theme.colors.background.secondary};
   padding: ${props => props.theme.spacing.md};
   border-radius: ${props => props.theme.borderRadius.medium};
   margin-top: ${props => props.theme.spacing.md};
 `;
 
-const InstructionItem = styled.div`
+const EnhancedInstructionItem = styled.div`
   display: flex;
   gap: ${props => props.theme.spacing.sm};
   align-items: flex-start;

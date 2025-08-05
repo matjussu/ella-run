@@ -41,38 +41,6 @@ const getDailyMessage = () => {
   return messages[today % messages.length];
 };
 
-// Workout day suggestions based on day of week
-const getWorkoutSuggestion = () => {
-  const dayOfWeek = new Date().getDay(); // 0 = Dimanche, 1 = Lundi, etc.
-  
-  const suggestions = {
-    1: { // Lundi
-      title: "💪 Motivation du Lundi",
-      description: "Commence ta semaine en force avec un entraînement complet !",
-      focus: "Corps Entier + Course",
-      emoji: "🔥"
-    },
-    3: { // Mercredi
-      title: "🏃‍♀️ Guerrière du Mercredi",
-      description: "Journée parfaite pour les squats et le renforcement du core abdominale!",
-      focus: "Squats + Abdos",
-      emoji: "⚡"
-    },
-    5: { // Vendredi
-      title: "🎉 Finisseur du Vendredi",
-      description: "Termine ta semaine avec une incroyable session cardio !",
-      focus: "Cardio + Core",
-      emoji: "✨"
-    }
-  };
-  
-  return suggestions[dayOfWeek] || {
-    title: "🌟 Journée Parfaite",
-    description: "Chaque jour est parfait pour prendre soin de soi et bouger !",
-    focus: "Récupération Active",
-    emoji: "💫"
-  };
-};
 
 // Styled Components
 const DashboardContainer = styled.div`
@@ -323,12 +291,9 @@ const ProgressValue = styled.span`
   font-size: ${props => props.theme.fonts.sizes.sm};
 `;
 
-const PersonalizedDashboard = ({ onStartWorkout }) => {
+const PersonalizedDashboard = ({ onNavigate }) => {
   const [progress, setProgress] = useState(null);
-  const [userProfile, setUserProfile] = useState(null);
   const [personalizedContent, setPersonalizedContent] = useState(null);
-  const [recentWorkouts, setRecentWorkouts] = useState([]);
-  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     loadDashboardData();
@@ -336,7 +301,6 @@ const PersonalizedDashboard = ({ onStartWorkout }) => {
 
   const loadDashboardData = async () => {
     try {
-      setLoading(true);
       
       // Load user profile and progress data with better error handling
       const [progressData, workoutsData, profileData] = await Promise.all([
@@ -370,8 +334,6 @@ const PersonalizedDashboard = ({ onStartWorkout }) => {
       });
       
       setProgress(enhancedProgress);
-      setRecentWorkouts(workoutsData.slice(0, 3));
-      setUserProfile(profileData.profile);
       
       // Generate personalized content
       if (profileData.profile) {
@@ -388,13 +350,10 @@ const PersonalizedDashboard = ({ onStartWorkout }) => {
         completionRate: 33,
         streak: 1
       });
-    } finally {
-      setLoading(false);
     }
   };
 
   // Use personalized content or fallback to default
-  const workoutSuggestion = personalizedContent?.workoutSuggestion || getWorkoutSuggestion();
   const greeting = personalizedContent?.greeting || getCurrentGreeting();
   const dailyMessage = personalizedContent?.motivation || getDailyMessage();
 
@@ -438,22 +397,22 @@ const PersonalizedDashboard = ({ onStartWorkout }) => {
 
       {/* Main Content */}
       <MainContent>
-        {/* Today's Workout Suggestion */}
+        {/* Today's Workout Plan */}
         <TodayWorkoutCard>
           <WorkoutCardHeader>
             <WorkoutTitle>
-              {workoutSuggestion.emoji} {workoutSuggestion.title}
+              🎯 Ta Séance du Jour
             </WorkoutTitle>
             <WorkoutDescription>
-              {workoutSuggestion.description}
+              Retrouve le programme de ta semaine et commence ta prochaine séance.
             </WorkoutDescription>
             <WorkoutFocus>
-              Focus d'Aujourd'hui : {workoutSuggestion.focus}
+              Ton plan t'attend - prête à continuer ?
             </WorkoutFocus>
           </WorkoutCardHeader>
           
-          <WorkoutButton onClick={onStartWorkout}>
-            🚀 Commencer l'Entraînement
+          <WorkoutButton onClick={() => onNavigate('workout_generator')}>
+            👀 Voir Mon Plan
           </WorkoutButton>
         </TodayWorkoutCard>
 

@@ -13,6 +13,7 @@ import ErrorBoundary from './components/ErrorBoundary';
 import LoadingSpinner from './components/LoadingSpinner';
 import PersonalizedDashboard from './components/PersonalizedDashboard';
 import EditableProfile from './components/EditableProfile';
+import WorkoutGenerator from './components/WorkoutGenerator';
 import MilestoneTracker from './components/MilestoneTracker';
 import OnboardingFlow from './components/OnboardingFlow';
 import PWAInstallPrompt from './components/PWAInstallPrompt';

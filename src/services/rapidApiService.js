@@ -173,32 +173,43 @@ const mapApiResponseToAppStructure = (apiResponse) => {
   // Extraction des données selon la structure officielle de l'API
   const result = apiResponse.result || apiResponse;
   
+  console.log('🔄 Mapping API response:', apiResponse);
+  console.log('📊 Result extracted:', result);
+  console.log('💪 Exercises found:', result.exercises);
+  
+  // Créer les sessions basées sur les exercices reçus
+  const sessions = (result.exercises || []).map((exercise, index) => mapExerciseToSession(exercise, index + 1));
+  
+  console.log('📋 Sessions mapped:', sessions);
+  
   return {
     id: generateWorkoutId(),
-    title: result.goal || "Programme d'entraînement personnalisé",
-    description: `Plan de ${result.total_weeks || 4} semaines pour ${result.goal || 'améliorer votre forme'}`,
+    title: result.seo_title || result.goal || "Programme d'entraînement personnalisé",
+    description: result.seo_content || `Plan de ${result.total_weeks || 4} semaines pour ${result.goal || 'améliorer votre forme'}`,
     totalSessions: result.schedule?.days_per_week || 3,
     level: capitalizeFirstLetter(result.fitness_level) || "Beginner",
     estimatedDuration: result.schedule?.session_duration || 45,
-    sessions: (result.exercises || []).map((dayData, index) => mapDayToSession(dayData, index + 1))
+    sessions: sessions
   };
 };
 
 /**
- * Mappe une journée d'exercices de l'API vers une session de l'application
- * @param {Object} dayData - Données d'une journée d'exercices
+ * Mappe un exercice de l'API vers une session de l'application
+ * @param {Object} exercise - Données d'un exercice
  * @param {number} sessionNumber - Numéro de la session
  * @returns {Object} - Session mappée
  */
-const mapDayToSession = (dayData, sessionNumber) => {
+const mapExerciseToSession = (exercise, sessionNumber) => {
+  console.log(`🏋️ Mapping exercise ${sessionNumber}:`, exercise);
+  
   return {
     id: `session_${sessionNumber}`,
     sessionNumber: sessionNumber,
-    title: `Session ${sessionNumber} - ${dayData.day || 'Entraînement'}`,
-    type: "Mixed",
-    description: `Entraînement du ${dayData.day || 'jour ' + sessionNumber}`,
+    title: `Session ${sessionNumber} - ${exercise.name || 'Entraînement'}`,
+    type: exercise.type || "Mixed",
+    description: exercise.description || `Entraînement de la session ${sessionNumber}`,
     warmup: [], // L'API ne sépare pas warmup/main/cooldown
-    mainWorkout: (dayData.exercises || []).map((exercise, index) => mapApiExercise(exercise, index)),
+    mainWorkout: [mapApiExercise(exercise, 0)], // Chaque exercice devient un exercice principal
     cooldown: []
   };
 };
@@ -210,42 +221,68 @@ const mapDayToSession = (dayData, sessionNumber) => {
  * @returns {Object} - Exercice mappé
  */
 const mapApiExercise = (exercise, index) => {
+  console.log(`🎯 Mapping individual exercise ${index}:`, exercise);
+  
   const exerciseData = {
     id: `ex_api_${index + 1}_${Date.now()}`,
-    name: exercise.name || `Exercice ${index + 1}`
+    name: exercise.name || exercise.exercise || `Exercice ${index + 1}`,
+    description: exercise.description || exercise.instructions || '',
+    type: exercise.type || exercise.category || 'Mixed'
   };
 
   // Mapping des champs selon la documentation
   if (exercise.duration) {
     // Conversion si la durée est au format "20 minutes"
-    const durationMatch = exercise.duration.match(/(\d+)\s*min/i);
+    const durationMatch = exercise.duration.toString().match(/(\d+)/);
     exerciseData.duration = durationMatch ? parseInt(durationMatch[1]) : exercise.duration;
   }
 
-  if (exercise.sets) {
-    exerciseData.sets = exercise.sets;
+  if (exercise.sets || exercise.set) {
+    exerciseData.sets = exercise.sets || exercise.set;
   }
 
-  if (exercise.repetitions && exercise.repetitions !== "N/A") {
-    exerciseData.reps = exercise.repetitions;
+  if (exercise.repetitions || exercise.reps || exercise.rep) {
+    const reps = exercise.repetitions || exercise.reps || exercise.rep;
+    if (reps !== "N/A" && reps !== "null") {
+      exerciseData.reps = reps;
+    }
   }
 
   if (exercise.equipment && exercise.equipment !== "None") {
     exerciseData.equipment = exercise.equipment;
   }
 
-  // Instructions générées basées sur le type d'exercice
-  exerciseData.instructions = [`Effectuez ${exerciseData.name}`];
-  if (exerciseData.sets && exerciseData.reps) {
-    exerciseData.instructions.push(`${exerciseData.sets} séries de ${exerciseData.reps} répétitions`);
+  // Ajouter les instructions détaillées
+  exerciseData.instructions = [];
+  
+  if (exercise.instructions) {
+    if (typeof exercise.instructions === 'string') {
+      exerciseData.instructions = exercise.instructions.split('.').filter(i => i.trim());
+    } else if (Array.isArray(exercise.instructions)) {
+      exerciseData.instructions = exercise.instructions;
+    }
   }
-  if (exerciseData.duration) {
-    exerciseData.instructions.push(`Durée : ${exerciseData.duration} minutes`);
-  }
-  if (exerciseData.equipment) {
-    exerciseData.instructions.push(`Équipement : ${exerciseData.equipment}`);
+  
+  // Si pas d'instructions, en générer
+  if (exerciseData.instructions.length === 0) {
+    exerciseData.instructions.push(`Effectuez ${exerciseData.name}`);
+    if (exerciseData.sets && exerciseData.reps) {
+      exerciseData.instructions.push(`${exerciseData.sets} séries de ${exerciseData.reps} répétitions`);
+    }
+    if (exerciseData.duration) {
+      exerciseData.instructions.push(`Durée : ${exerciseData.duration} minutes`);
+    }
+    if (exerciseData.equipment) {
+      exerciseData.instructions.push(`Équipement : ${exerciseData.equipment}`);
+    }
   }
 
+  // Ajouter des conseils si disponibles
+  if (exercise.tips || exercise.advice) {
+    exerciseData.tips = typeof exercise.tips === 'string' ? [exercise.tips] : exercise.tips;
+  }
+
+  console.log(`✅ Exercise mapped:`, exerciseData);
   return exerciseData;
 };
 

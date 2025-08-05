@@ -265,10 +265,23 @@ const WorkoutPlanner = ({ onExerciseSelect }) => {
 
       console.log('🏋️ Generating weekly workout plan with profile:', userProfile);
 
-      const workoutResult = await generateWorkoutPlan(userProfile);
+      // Map profile data to the format expected by generateWorkoutPlan
+      const profileData = userProfile.profile ? {
+        goals: userProfile.profile.fitnessProfile?.goals || userProfile.profile.goals || [],
+        level: userProfile.profile.fitnessProfile?.level || userProfile.profile.level || 'débutante',
+        equipment: userProfile.profile.equipment || [],
+        preferences: userProfile.profile.fitnessProfile?.preferredWorkoutTypes || userProfile.profile.preferences?.workoutPreferences || userProfile.profile.preferences || [],
+        sessionsPerWeek: userProfile.profile.schedule?.sessionsPerWeek || userProfile.profile.sessionsPerWeek || 3,
+        sessionDuration: userProfile.profile.schedule?.sessionDuration || userProfile.profile.sessionDuration || 45,
+        availableDays: userProfile.profile.schedule?.availableDays || userProfile.profile.availableDays || ['monday', 'wednesday', 'friday']
+      } : null;
+      
+      console.log('🎯 Mapped profile data for API:', profileData);
+
+      const workoutResult = await generateWorkoutPlan(profileData);
 
       if (workoutResult.success) {
-        const plan = organizeWorkoutsByDays(workoutResult.data, userProfile.availableDays || ['monday', 'wednesday', 'friday']);
+        const plan = organizeWorkoutsByDays(workoutResult.data, profileData?.availableDays || userProfile.profile?.availableDays || ['monday', 'wednesday', 'friday']);
         setWeeklyPlan(plan);
         console.log('✅ Weekly plan generated:', plan);
       } else {
@@ -283,7 +296,23 @@ const WorkoutPlanner = ({ onExerciseSelect }) => {
   };
 
   const organizeWorkoutsByDays = (workoutData, availableDays) => {
-    const exercises = workoutData.exercises || [];
+    console.log('📋 Organizing workout data:', workoutData);
+    
+    // Extract exercises from the new session structure
+    let exercises = [];
+    if (workoutData.sessions && workoutData.sessions.length > 0) {
+      // Flatten all exercises from all sessions
+      exercises = workoutData.sessions.flatMap(session => [
+        ...(session.warmup || []),
+        ...(session.mainWorkout || []),
+        ...(session.cooldown || [])
+      ]);
+    } else if (workoutData.exercises) {
+      // Fallback for old structure
+      exercises = workoutData.exercises;
+    }
+    
+    console.log('💪 Extracted exercises:', exercises);
     const exercisesPerDay = Math.ceil(exercises.length / availableDays.length);
     
     const weekPlan = {};

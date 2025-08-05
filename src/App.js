@@ -512,7 +512,7 @@ function App() {
   };
 
   /**
-   * Initialize the application and check onboarding status - FIXED VERSION
+   * Initialize the application and check onboarding status - ENHANCED VERSION
    */
   const initializeApp = async () => {
     console.log('🔄 Initializing ELLA Run app...');
@@ -521,27 +521,51 @@ function App() {
       setIsLoading(true);
       setError(null);
       
+      // Test Firebase connection first
+      const { checkEnvironmentVariables } = await import('./test-firebase');
+      const envCheck = checkEnvironmentVariables();
+      
+      if (!envCheck.valid) {
+        console.warn('⚠️ Firebase environment issues, continuing with local data');
+      }
+      
       // Add timeout to prevent hanging
       const timeoutPromise = new Promise((_, reject) => 
-        setTimeout(() => reject(new Error('Initialization timeout')), 10000)
+        setTimeout(() => reject(new Error('Initialization timeout')), 15000)
       );
       
       const initPromise = (async () => {
         // Check if user has completed onboarding
-        const onboardingStatus = await userProfileService.checkOnboardingStatus();
+        let onboardingStatus;
+        try {
+          onboardingStatus = await userProfileService.checkOnboardingStatus();
+        } catch (error) {
+          console.warn('⚠️ Onboarding status check failed, assuming not completed:', error);
+          onboardingStatus = { completed: false, profile: null };
+        }
         
         if (onboardingStatus.completed && onboardingStatus.profile) {
           console.log('✅ User has completed onboarding');
           setOnboardingCompleted(true);
           
-          // Load progress data
+          // Load progress data with fallback
           try {
             const progress = await userProgressService.getProgressStats();
-            setUserProgress(progress);
-            console.log('✅ Progress data loaded');
+            setUserProgress(progress || {
+              totalSessions: 0,
+              completedSessions: 0,
+              completionRate: 0,
+              streak: 0
+            });
+            console.log('✅ Progress data loaded:', progress);
           } catch (progressError) {
-            console.warn('⚠️ Progress loading failed (non-critical):', progressError);
-            // Don't fail the entire init for progress loading
+            console.warn('⚠️ Progress loading failed, using fallback data:', progressError);
+            setUserProgress({
+              totalSessions: 0,
+              completedSessions: 0,
+              completionRate: 0,
+              streak: 0
+            });
           }
         } else {
           console.log('📝 User needs to complete onboarding');
@@ -555,7 +579,16 @@ function App() {
       
     } catch (error) {
       console.error('❌ Error initializing app:', error);
-      setError(`Failed to load app: ${error.message}`);
+      
+      // Provide more user-friendly error messages
+      let userMessage = 'Problème de chargement de l\'application.';
+      if (error.message.includes('timeout')) {
+        userMessage = 'Chargement trop lent. Vérifiez votre connexion internet.';
+      } else if (error.message.includes('network')) {
+        userMessage = 'Problème de connexion. Essayez de recharger la page.';
+      }
+      
+      setError(userMessage);
       
       // Fallback to showing onboarding
       setOnboardingCompleted(false);
@@ -588,24 +621,46 @@ function App() {
   };
 
   /**
-   * Generate personalized workout using RapidAPI
+   * Generate personalized workout using RapidAPI with enhanced error handling
    */
   const handleGenerateEllaWorkout = async () => {
     try {
       setIsLoading(true);
+      setError(null);
+      
+      console.log('🎯 Starting workout generation...');
       
       // Get user profile for personalization
-      const userProfile = await userProfileService.getUserProfileByName();
-      const workoutResult = await generateWorkoutPlan(userProfile);
+      const userProfileResult = await userProfileService.getUserProfileByName('Ella');
+      const workoutResult = await generateWorkoutPlan(userProfileResult?.profile);
+      
+      console.log('💪 Workout generation result:', workoutResult);
       
       if (workoutResult.success) {
         handleWorkoutGenerated(workoutResult.data);
         setCurrentView(APP_STATES.WORKOUT_GENERATOR);
+        
+        // Update user progress
+        if (userProgress) {
+          const updatedProgress = {
+            ...userProgress,
+            totalSessions: (userProgress.totalSessions || 0) + 1
+          };
+          setUserProgress(updatedProgress);
+        }
+        
+        console.log('✅ Workout generated successfully!');
       } else {
         throw new Error(workoutResult.error || 'Failed to generate workout');
       }
     } catch (error) {
-      handleError(error);
+      console.error('❌ Workout generation failed:', error);
+      
+      // Try to provide fallback guidance
+      setError('Génération d\'entraînement temporairement indisponible. Essayez le plannificateur ou rechargez la page.');
+      
+      // Still navigate to workout planner to allow manual generation
+      setCurrentView(APP_STATES.WORKOUT_GENERATOR);
     } finally {
       setIsLoading(false);
     }

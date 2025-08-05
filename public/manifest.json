@@ -5,28 +5,40 @@
   "description": "Application de fitness personnalisée avec plans d'entraînement course à pied et exercices au poids du corps",
   "icons": [
     {
-      "src": "icon-192x192.png",
+      "src": "logo_run.png",
       "type": "image/png",
       "sizes": "192x192",
       "purpose": "any"
     },
     {
-      "src": "icon-512x512.png", 
+      "src": "logo_run.png", 
       "type": "image/png",
       "sizes": "512x512",
       "purpose": "any"
     },
     {
-      "src": "apple-touch-icon.png",
+      "src": "logo_run.png",
       "type": "image/png",
       "sizes": "180x180",
       "purpose": "any"
     },
     {
-      "src": "logo_run.svg",
-      "type": "image/svg+xml",
-      "sizes": "any",
+      "src": "logo_run.png",
+      "type": "image/png",
+      "sizes": "512x512",
       "purpose": "maskable"
+    },
+    {
+      "src": "icon-192x192.png",
+      "type": "image/png",
+      "sizes": "192x192",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "icon-512x512.png", 
+      "type": "image/png",
+      "sizes": "512x512",
+      "purpose": "any maskable"
     }
   ],
   "start_url": "/",

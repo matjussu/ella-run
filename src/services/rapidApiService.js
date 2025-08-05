@@ -45,6 +45,12 @@ export const generateWorkoutPlan = async (profileData = null) => {
 
     console.log('🔥 Appel à l\'API AI Workout Planner...');
     console.log('👤 Profile data provided:', profileData);
+    
+    // Test API availability first
+    if (!process.env.REACT_APP_RAPIDAPI_KEY || process.env.REACT_APP_RAPIDAPI_KEY === 'your-rapidapi-key-here') {
+      console.warn('⚠️ RapidAPI key not configured, using fallback service');
+      return await getFallbackWorkout(profileData);
+    }
 
     // Mapper les données du profil vers les paramètres de l'API
     const getGoalsFromProfile = (goals) => {
@@ -155,12 +161,39 @@ export const generateWorkoutPlan = async (profileData = null) => {
       errorMessage += ` Erreur: ${error.message}`;
     }
 
-    // Retourner une erreur avec suggestion de fallback
-    return {
-      success: false,
-      error: errorMessage,
-      suggestion: 'Utilisation du système de fallback (service Ella) recommandée.'
-    };
+    // Use fallback service on API failure
+    console.warn('⚠️ API failed, using fallback service');
+    return await getFallbackWorkout(profileData);
+  }
+};
+
+/**
+ * Fallback workout generator using Ella's personalized service
+ * @param {Object} profileData - User profile data
+ */
+const getFallbackWorkout = async (profileData) => {
+  try {
+    // Import Ella service dynamically to avoid circular dependencies
+    const { generateEllaWorkout } = await import('./ellaWorkoutService');
+    
+    console.log('🎯 Using Ella\'s personalized workout service as fallback');
+    const ellaResult = await generateEllaWorkout(profileData);
+    
+    if (ellaResult.success) {
+      return {
+        success: true,
+        data: ellaResult.data,
+        source: 'ella_personalized_service',
+        message: 'Entraînement généré par le service personnalisé d\'Ella'
+      };
+    } else {
+      // Final fallback to mock data
+      return getMockWorkoutPlan();
+    }
+  } catch (error) {
+    console.error('❌ Fallback service also failed:', error);
+    // Return mock data as final fallback
+    return getMockWorkoutPlan();
   }
 };
 

@@ -13,8 +13,11 @@ const CACHE_URLS = [
   '/static/js/bundle.js',
   '/static/css/main.css',
   '/manifest.json',
+  '/logo_run.png',
   '/logo_run.svg',
-  '/logo_run_2.svg'
+  '/apple-touch-icon.png',
+  '/icon-192x192.png',
+  '/icon-512x512.png'
 ];
 
 // API endpoints to cache

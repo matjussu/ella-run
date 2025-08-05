@@ -83,31 +83,31 @@ const NAV_ITEMS = [
     id: 'home',
     icon: '🏠',
     label: 'Accueil',
-    action: 'HOME'
+    action: 'home'
   },
   {
     id: 'workout',
     icon: '💪',
     label: 'Workout',
-    action: 'WORKOUT_GENERATOR'
+    action: 'workout_generator'
   },
   {
     id: 'progress',
     icon: '📊',
     label: 'Progrès',
-    action: 'PROGRESS'
+    action: 'progress'
   },
   {
     id: 'profile',
     icon: '👤',
     label: 'Profil',
-    action: 'PROFILE'
+    action: 'profile'
   },
   {
     id: 'achievements',
     icon: '🏆',
     label: 'Succès',
-    action: 'ACHIEVEMENTS'
+    action: 'achievements'
   }
 ];
 
@@ -116,12 +116,18 @@ const NAV_ITEMS = [
  */
 const MobileNavigation = ({ currentView, onNavigate }) => {
   const handleNavClick = (action) => {
+    console.log('🔄 Mobile nav clicked:', action, 'Current view:', currentView);
+    
     // Add haptic feedback on supported devices
     if ('vibrate' in navigator) {
       navigator.vibrate(50);
     }
     
-    onNavigate(action);
+    if (onNavigate) {
+      onNavigate(action);
+    } else {
+      console.error('❌ onNavigate function not provided to MobileNavigation');
+    }
   };
 
   return (

@@ -5,16 +5,22 @@
   "description": "Application de fitness personnalisée avec plans d'entraînement course à pied et exercices au poids du corps",
   "icons": [
     {
+      "src": "icon-192x192.svg",
+      "type": "image/svg+xml",
+      "sizes": "192x192",
+      "purpose": "any"
+    },
+    {
+      "src": "icon-512x512.svg", 
+      "type": "image/svg+xml",
+      "sizes": "512x512",
+      "purpose": "any"
+    },
+    {
       "src": "logo_run.svg",
       "type": "image/svg+xml",
       "sizes": "any",
-      "purpose": "any maskable"
-    },
-    {
-      "src": "logo_run_2.svg",
-      "type": "image/svg+xml",
-      "sizes": "any",
-      "purpose": "any maskable"
+      "purpose": "maskable"
     }
   ],
   "start_url": "/",

@@ -7,7 +7,7 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import styled from 'styled-components';
-import { userProgressService, workoutSessionService } from '../services/firebaseService';
+import userProfileService from '../services/userProfileService';
 import { useAppContext } from '../App';
 import LoadingSpinner from './LoadingSpinner';
 
@@ -275,10 +275,10 @@ const EmptyState = styled.div`
  * ProgressDashboard Component
  */
 const ProgressDashboard = ({ progress, onRefresh }) => {
-  const { setIsLoading, handleError } = useAppContext();
+  const { handleError } = useAppContext();
   const [workoutHistory, setWorkoutHistory] = useState([]);
   const [isRefreshing, setIsRefreshing] = useState(false);
-  const [progressStats, setProgressStats] = useState(progress);
+  const [progressStats, setProgressStats] = useState(null);
 
   // Load data on component mount
   useEffect(() => {
@@ -297,23 +297,74 @@ const ProgressDashboard = ({ progress, onRefresh }) => {
     try {
       setIsRefreshing(true);
       
-      // Load workout history
-      const history = await workoutSessionService.getAllWorkoutSessions();
-      setWorkoutHistory(history.slice(0, 10)); // Show last 10 workouts
+      // Load user profile with progress data
+      let result = await userProfileService.getUserProfile('ella-default');
       
-      // Load progress stats if not provided
-      if (!progressStats) {
-        const stats = await userProgressService.getProgressStats();
+      if (!result.success) {
+        // Fallback to getting by name
+        result = await userProfileService.getUserProfileByName('Ella');
+      }
+      
+      if (result.success && result.profile) {
+        const userProfile = result.profile;
+        
+        // Convert user profile data to progress stats format
+        const stats = {
+          totalSessions: 12, // Total sessions in 4-week program
+          completedSessions: result.profile.totalWorkoutsCompleted || 0,
+          completionRate: Math.round(((result.profile.totalWorkoutsCompleted || 0) / 12) * 100),
+          streak: result.profile.completedSessionsThisWeek?.length || 0,
+          currentWeek: result.profile.currentWeek || 1,
+          sessionsThisWeek: result.profile.completedSessionsThisWeek?.length || 0
+        };
+        
         setProgressStats(stats);
+        
+        // Create workout history from user profile data
+        const mockHistory = [];
+        for (let i = 0; i < (userProfile.totalWorkoutsCompleted || 0); i++) {
+          mockHistory.push({
+            id: `workout-${i + 1}`,
+            title: `Entraînement ${i + 1}`,
+            createdAt: new Date(Date.now() - (i * 24 * 60 * 60 * 1000)), // Mock dates
+            estimatedDuration: 45,
+            totalSessions: 1,
+            isCompleted: true
+          });
+        }
+        setWorkoutHistory(mockHistory.slice(0, 10));
+        
+        console.log('📊 Live progress data loaded:', stats);
+      } else {
+        // Set default values if no profile found
+        setProgressStats({
+          totalSessions: 12,
+          completedSessions: 0,
+          completionRate: 0,
+          streak: 0,
+          currentWeek: 1,
+          sessionsThisWeek: 0
+        });
+        setWorkoutHistory([]);
       }
       
     } catch (error) {
       console.error('Error loading dashboard data:', error);
       handleError(new Error('Failed to load progress data'));
+      
+      // Set fallback data
+      setProgressStats({
+        totalSessions: 12,
+        completedSessions: 0,
+        completionRate: 0,
+        streak: 0,
+        currentWeek: 1,
+        sessionsThisWeek: 0
+      });
     } finally {
       setIsRefreshing(false);
     }
-  }, [progressStats, handleError]);
+  }, [handleError]);
 
   /**
    * Handle refresh button click
@@ -334,45 +385,45 @@ const ProgressDashboard = ({ progress, onRefresh }) => {
     const achievements = [
       {
         id: 'first_workout',
-        title: 'Getting Started',
-        description: 'Complete your first workout',
+        title: 'Premier Pas Fait !',
+        description: 'Terminer ton premier entraînement',
         icon: '🎯',
-        unlocked: progressStats.totalSessions >= 1
+        unlocked: progressStats.completedSessions >= 1
       },
       {
         id: 'consistent_week',
-        title: 'Weekly Warrior',
-        description: 'Complete 3 workouts in a week',
+        title: 'Héroïne de la Semaine',
+        description: 'Compléter 3 entraînements cette semaine',
         icon: '🔥',
-        unlocked: progressStats.streak >= 3
+        unlocked: progressStats.sessionsThisWeek >= 3
       },
       {
         id: 'half_dozen',
-        title: 'Half Dozen',
-        description: 'Complete 6 workouts total',
+        title: 'Demi-Douzaine',
+        description: 'Compléter 6 entraînements au total',
         icon: '💪',
         unlocked: progressStats.completedSessions >= 6
       },
       {
         id: 'perfect_week',
-        title: 'Perfect Week',
-        description: 'Complete all planned workouts',
+        title: 'Semaine Parfaite',
+        description: 'Terminer tous les entraînements prévus',
         icon: '⭐',
         unlocked: progressStats.completionRate >= 100
       },
       {
-        id: 'consistent_month',
-        title: 'Monthly Champion',
-        description: 'Complete 12 workouts total',
+        id: 'program_complete',
+        title: 'Championne du Programme',
+        description: 'Terminer le programme de 4 semaines',
         icon: '🏆',
         unlocked: progressStats.completedSessions >= 12
       },
       {
-        id: 'dedication',
-        title: 'Dedication Master',
-        description: 'Maintain a 7-day streak',
+        id: 'weekly_consistency',
+        title: 'Régularité Exemplaire',
+        description: 'Terminer au moins 2 semaines complètes',
         icon: '🌟',
-        unlocked: progressStats.streak >= 7
+        unlocked: progressStats.currentWeek >= 3
       }
     ];
 
@@ -422,57 +473,57 @@ const ProgressDashboard = ({ progress, onRefresh }) => {
       {progressStats ? (
         <StatsGrid>
           <StatCard>
-            <StatIcon>📊</StatIcon>
-            <StatValue>{progressStats.totalSessions}</StatValue>
-            <StatLabel>Nombre d'entrainement</StatLabel>
-            <StatSubtext>Généré</StatSubtext>
+            <StatIcon>📅</StatIcon>
+            <StatValue>{progressStats.currentWeek}/4</StatValue>
+            <StatLabel>Semaine Actuelle</StatLabel>
+            <StatSubtext>Programme de 4 semaines</StatSubtext>
           </StatCard>
           
           <StatCard>
             <StatIcon>✅</StatIcon>
             <StatValue>{progressStats.completedSessions}</StatValue>
-            <StatLabel>Complété</StatLabel>
-            <StatSubtext>Entrainement terminé !</StatSubtext>
+            <StatLabel>Entraînements Terminés</StatLabel>
+            <StatSubtext>Au total</StatSubtext>
           </StatCard>
           
           <StatCard>
             <StatIcon>📈</StatIcon>
             <StatValue>{progressStats.completionRate}%</StatValue>
-            <StatLabel>Taux de succés</StatLabel>
-            <StatSubtext>Pourcentage</StatSubtext>
+            <StatLabel>Programme Complété</StatLabel>
+            <StatSubtext>Progression globale</StatSubtext>
           </StatCard>
           
           <StatCard>
             <StatIcon>🔥</StatIcon>
-            <StatValue>{progressStats.streak}</StatValue>
-            <StatLabel>Nombre d'entrainement de suite</StatLabel>
-            <StatSubtext>Abérrant</StatSubtext>
+            <StatValue>{progressStats.sessionsThisWeek}/3</StatValue>
+            <StatLabel>Séances Cette Semaine</StatLabel>
+            <StatSubtext>En cours</StatSubtext>
           </StatCard>
         </StatsGrid>
       ) : (
         <EmptyState>
           <div className="icon">📊</div>
-          <div className="message">No progress data yet</div>
-          <div className="submessage">Start by generating your first workout!</div>
+          <div className="message">Aucune donnée de progression pour le moment</div>
+          <div className="submessage">Commence par faire ton premier entraînement !</div>
         </EmptyState>
       )}
 
       {/* Progress Visualization */}
       {progressStats && progressStats.totalSessions > 0 && (
         <Section>
-          <SectionTitle>📈 Progress Overview</SectionTitle>
+          <SectionTitle>📈 Vue d'Ensemble des Progrès</SectionTitle>
           <ProgressBar>
             <ProgressFill $percentage={progressStats.completionRate} />
           </ProgressBar>
           <ProgressText>
-            You've completed {progressStats.completedSessions} out of {progressStats.totalSessions} workouts ({progressStats.completionRate}%)
+            Tu as terminé {progressStats.completedSessions} entraînements sur {progressStats.totalSessions} ({progressStats.completionRate}%)
           </ProgressText>
         </Section>
       )}
 
       {/* Achievements */}
       <Section>
-        <SectionTitle>🏆 Achievements</SectionTitle>
+        <SectionTitle>🏆 Tes Réussites</SectionTitle>
         <AchievementGrid>
           {calculateAchievements().map((achievement) => (
             <AchievementCard key={achievement.id} unlocked={achievement.unlocked}>
@@ -510,8 +561,8 @@ const ProgressDashboard = ({ progress, onRefresh }) => {
         ) : (
           <EmptyState>
             <div className="icon">📝</div>
-            <div className="message">No workout history yet</div>
-            <div className="submessage">Your completed workouts will appear here</div>
+            <div className="message">Aucun historique d'entraînement pour le moment</div>
+            <div className="submessage">Tes entraînements terminés apparaîtront ici</div>
           </EmptyState>
         )}
       </Section>

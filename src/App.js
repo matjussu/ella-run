@@ -727,6 +727,7 @@ function App() {
           return (
             <PersonalizedDashboard
               onStartWorkout={handleGenerateEllaWorkout}
+              onNavigate={handleNavigate}
             />
           );
         case APP_STATES.WORKOUT_GENERATOR:
@@ -759,6 +760,7 @@ function App() {
           return (
             <PersonalizedDashboard
               onStartWorkout={handleGenerateEllaWorkout}
+              onNavigate={handleNavigate}
             />
           );
       }

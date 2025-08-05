@@ -14,6 +14,8 @@ import FitnessLevelStep from './onboarding/FitnessLevelStep';
 import GoalsStep from './onboarding/GoalsStep';
 import TargetAreasStep from './onboarding/TargetAreasStep';
 import ScheduleStep from './onboarding/ScheduleStep';
+import EquipmentStep from './onboarding/EquipmentStep';
+import PreferencesStep from './onboarding/PreferencesStep';
 import CompletionStep from './onboarding/CompletionStep';
 
 // Animations
@@ -67,6 +69,10 @@ const OnboardingContent = () => {
         return <TargetAreasStep />;
       case ONBOARDING_STEPS.SCHEDULE:
         return <ScheduleStep />;
+      case ONBOARDING_STEPS.EQUIPMENT:
+        return <EquipmentStep />;
+      case ONBOARDING_STEPS.PREFERENCES:
+        return <PreferencesStep />;
       case ONBOARDING_STEPS.COMPLETION:
         return <CompletionStep />;
       default:

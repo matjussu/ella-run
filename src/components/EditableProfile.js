@@ -138,8 +138,19 @@ const CheckboxItem = styled.label`
   input[type="checkbox"] {
     width: 18px;
     height: 18px;
-    accent-color: ${props => props.theme.colors.primary};
+    accent-color: #ff69b4;
+    cursor: pointer;
+    
+    &:checked {
+      background-color: #ff69b4;
+      border-color: #ff69b4;
+    }
   }
+  
+  ${props => props.checked && `
+    background-color: rgba(255, 105, 180, 0.1);
+    border-color: #ff69b4;
+  `}
 `;
 
 const SaveIndicator = styled.div`
@@ -519,7 +530,7 @@ const EditableProfile = () => {
               console.log(`🎯 Goal ${goal.value}: checked=${isChecked}, profile.goals=`, profile.goals);
               
               return (
-                <CheckboxItem key={`${goal.value}-${renderKey}`}>
+                <CheckboxItem key={`${goal.value}-${renderKey}`} checked={isChecked}>
                   <input
                     type="checkbox"
                     checked={isChecked}
@@ -539,16 +550,19 @@ const EditableProfile = () => {
         <FormSection>
           <SectionTitle>Zones à travailler</SectionTitle>
           <CheckboxGroup>
-            {TARGET_AREAS.map(area => (
-              <CheckboxItem key={area.value}>
-                <input
-                  type="checkbox"
-                  checked={profile.targetAreas?.includes(area.value) || false}
-                  onChange={(e) => handleArrayChange('targetAreas', area.value, e.target.checked)}
-                />
-                {area.label}
-              </CheckboxItem>
-            ))}
+            {TARGET_AREAS.map(area => {
+              const isChecked = profile.targetAreas?.includes(area.value) || false;
+              return (
+                <CheckboxItem key={area.value} checked={isChecked}>
+                  <input
+                    type="checkbox"
+                    checked={isChecked}
+                    onChange={(e) => handleArrayChange('targetAreas', area.value, e.target.checked)}
+                  />
+                  {area.label}
+                </CheckboxItem>
+              );
+            })}
           </CheckboxGroup>
         </FormSection>
 
@@ -563,7 +577,7 @@ const EditableProfile = () => {
                 console.log(`📅 Day ${day.value}: checked=${isChecked}, profile.availableDays=`, profile.availableDays);
                 
                 return (
-                  <CheckboxItem key={`${day.value}-${renderKey}`}>
+                  <CheckboxItem key={`${day.value}-${renderKey}`} checked={isChecked}>
                     <input
                       type="checkbox"
                       checked={isChecked}
@@ -598,32 +612,38 @@ const EditableProfile = () => {
         <FormSection>
           <SectionTitle>Équipement disponible</SectionTitle>
           <CheckboxGroup>
-            {EQUIPMENT.map(eq => (
-              <CheckboxItem key={eq.value}>
-                <input
-                  type="checkbox"
-                  checked={profile.equipment?.includes(eq.value) || false}
-                  onChange={(e) => handleArrayChange('equipment', eq.value, e.target.checked)}
-                />
-                {eq.label}
-              </CheckboxItem>
-            ))}
+            {EQUIPMENT.map(eq => {
+              const isChecked = profile.equipment?.includes(eq.value) || false;
+              return (
+                <CheckboxItem key={eq.value} checked={isChecked}>
+                  <input
+                    type="checkbox"
+                    checked={isChecked}
+                    onChange={(e) => handleArrayChange('equipment', eq.value, e.target.checked)}
+                  />
+                  {eq.label}
+                </CheckboxItem>
+              );
+            })}
           </CheckboxGroup>
         </FormSection>
 
         <FormSection>
           <SectionTitle>Types d'exercices préférés</SectionTitle>
           <CheckboxGroup>
-            {PREFERENCES.map(pref => (
-              <CheckboxItem key={pref.value}>
-                <input
-                  type="checkbox"
-                  checked={profile.preferences?.includes(pref.value) || false}
-                  onChange={(e) => handleArrayChange('preferences', pref.value, e.target.checked)}
-                />
-                {pref.label}
-              </CheckboxItem>
-            ))}
+            {PREFERENCES.map(pref => {
+              const isChecked = profile.preferences?.includes(pref.value) || false;
+              return (
+                <CheckboxItem key={pref.value} checked={isChecked}>
+                  <input
+                    type="checkbox"
+                    checked={isChecked}
+                    onChange={(e) => handleArrayChange('preferences', pref.value, e.target.checked)}
+                  />
+                  {pref.label}
+                </CheckboxItem>
+              );
+            })}
           </CheckboxGroup>
         </FormSection>
 

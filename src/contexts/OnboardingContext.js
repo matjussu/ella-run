@@ -16,6 +16,8 @@ export const ONBOARDING_STEPS = {
   GOALS: 'goals',
   TARGET_AREAS: 'target_areas',
   SCHEDULE: 'schedule',
+  EQUIPMENT: 'equipment',
+  PREFERENCES: 'preferences',
   COMPLETION: 'completion'
 };
 
@@ -26,6 +28,8 @@ const STEP_ORDER = [
   ONBOARDING_STEPS.GOALS,
   ONBOARDING_STEPS.TARGET_AREAS,
   ONBOARDING_STEPS.SCHEDULE,
+  ONBOARDING_STEPS.EQUIPMENT,
+  ONBOARDING_STEPS.PREFERENCES,
   ONBOARDING_STEPS.COMPLETION
 ];
 
@@ -56,10 +60,12 @@ const initialState = {
       preferredTimes: [],
       availableDays: []
     },
+    equipment: [],
     preferences: {
       language: 'fr',
       units: 'metric',
-      notifications: true
+      notifications: true,
+      workoutPreferences: []
     }
   },
   validation: {
@@ -218,6 +224,24 @@ export const OnboardingProvider = ({ children }) => {
             errors.sessionDuration = 'Durée de séance requise';
             isValid = false;
           }
+          if (!userData.schedule.availableDays || userData.schedule.availableDays.length === 0) {
+            errors.availableDays = 'Au moins un jour disponible requis';
+            isValid = false;
+          }
+          break;
+
+        case ONBOARDING_STEPS.EQUIPMENT:
+          if (!userData.equipment || userData.equipment.length === 0) {
+            errors.equipment = 'Au moins un type d\'équipement requis';
+            isValid = false;
+          }
+          break;
+
+        case ONBOARDING_STEPS.PREFERENCES:
+          if (!userData.preferences.workoutPreferences || userData.preferences.workoutPreferences.length === 0) {
+            errors.workoutPreferences = 'Au moins une préférence d\'exercice requise';
+            isValid = false;
+          }
           break;
 
         default:
@@ -266,6 +290,10 @@ export const OnboardingProvider = ({ children }) => {
     updateUserData({ preferences: { ...state.userData.preferences, ...preferences } });
   };
 
+  const updateEquipment = (equipment) => {
+    updateUserData({ equipment });
+  };
+
   // Manual validation function (for explicit validation calls)
   const validateCurrentStep = () => {
     return state.validation.isValid;
@@ -281,9 +309,17 @@ export const OnboardingProvider = ({ children }) => {
         throw new Error('Données incomplètes');
       }
 
-      // Prepare final profile data
+      // Prepare final profile data with proper structure for API
       const profileData = {
-        ...state.userData,
+        id: 'ella-default',
+        personalInfo: state.userData.personalInfo,
+        fitnessProfile: {
+          ...state.userData.fitnessProfile,
+          preferredWorkoutTypes: state.userData.preferences?.workoutPreferences || []
+        },
+        schedule: state.userData.schedule,
+        equipment: state.userData.equipment || [],
+        preferences: state.userData.preferences,
         onboardingCompleted: true,
         createdAt: new Date().toISOString(),
         lastUpdated: new Date().toISOString()
@@ -363,6 +399,7 @@ export const OnboardingProvider = ({ children }) => {
     updateFitnessProfile,
     updateSchedule,
     updatePreferences,
+    updateEquipment,
     
     // Validation
     validateCurrentStep,
